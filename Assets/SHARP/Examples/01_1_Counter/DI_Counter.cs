@@ -7,7 +7,7 @@ namespace SHARP.Examples
 	{
 		public void InstallBindings(ContainerBuilder builder)
 		{
-			builder.AddTransient(typeof(VM_Counter));
+			builder.AddViewModel<VM_Counter>();
 		}
 	}
 }

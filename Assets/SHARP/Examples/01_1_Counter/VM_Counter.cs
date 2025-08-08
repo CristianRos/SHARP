@@ -1,30 +1,29 @@
-using System;
 using R3;
+using SHARP.Core;
 
 namespace SHARP.Examples
 {
-	public class VM_Counter : IDisposable
+	public class VM_Counter : ViewModel
 	{
-		IDisposable _disposable = Disposable.Empty;
-		public ReactiveProperty<int> Count = new(0);
+		ReactiveProperty<int> _count = new(0);
+		public ReactiveProperty<string> DisplayCount = new($"Count: 0");
+
 
 		public ReactiveCommand Increase { get; private set; } = new();
 		public ReactiveCommand Decrease { get; private set; } = new();
 
-
-		public VM_Counter()
+		protected override void HandleSubscriptions(DisposableBuilder d)
 		{
-			var d = Disposable.CreateBuilder();
+			_count
+				.Subscribe(value => DisplayCount.Value = $"Count: {value}")
+				.AddTo(ref d);
 
-			Increase.Subscribe(_ => Count.Value++).AddTo(ref d);
-			Decrease.Subscribe(_ => Count.Value--).AddTo(ref d);
-
-			_disposable = d.Build();
-		}
-
-		public void Dispose()
-		{
-			_disposable.Dispose();
+			Increase
+				.Subscribe(_ => _count.Value++)
+				.AddTo(ref d);
+			Decrease
+				.Subscribe(_ => _count.Value--)
+				.AddTo(ref d);
 		}
 	}
 }

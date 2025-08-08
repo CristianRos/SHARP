@@ -1,28 +1,21 @@
-using System;
 using R3;
-using Reflex.Attributes;
+using SHARP.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace SHARP.Examples
 {
-	public class V_Counter : MonoBehaviour, IDisposable
+	public class V_Counter : View<VM_Counter>
 	{
-		[Inject] VM_Counter _viewModel;
-
 		[SerializeField] TMP_Text _countText;
 		[SerializeField] Button _increaseButton;
 		[SerializeField] Button _decreaseButton;
 
-		IDisposable _disposable = Disposable.Empty;
-
-		void OnEnable()
+		protected override void HandleSubscriptions(VM_Counter viewModel, DisposableBuilder d)
 		{
-			var d = Disposable.CreateBuilder();
-
-			_viewModel.Count
-				.Subscribe(count => _countText.text = $"Count: {count}")
+			viewModel.DisplayCount
+				.Subscribe(value => _countText.text = value)
 				.AddTo(ref d);
 
 			_increaseButton.OnClickAsObservable()
@@ -32,11 +25,6 @@ namespace SHARP.Examples
 			_decreaseButton.OnClickAsObservable()
 				.Subscribe(_viewModel.Decrease.Execute)
 				.AddTo(ref d);
-
-			_disposable = d.Build();
 		}
-
-		void OnDisable() => _disposable.Dispose();
-		public void Dispose() => _disposable.Dispose();
 	}
 }
