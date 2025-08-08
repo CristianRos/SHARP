@@ -668,7 +668,7 @@ GameObject:
   - component: {fileID: 2806685124024587133}
   - component: {fileID: 6015340781144191787}
   m_Layer: 5
-  m_Name: Counter
+  m_Name: CounterWithContext
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -706,7 +706,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a71f5b564c83f7479069126b2b98ae8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _context: 
+  _context: Counter
   _countText: {fileID: 6357856840796769787}
   _increaseButton: {fileID: 2463590821815585411}
   _decreaseButton: {fileID: 658379748255217819}

@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using R3;
 using Reflex.Attributes;
 using Reflex.Extensions;
@@ -9,17 +10,24 @@ namespace SHARP.Core
 	public abstract class View<VM> : MonoBehaviour, IDisposable
 		where VM : IViewModel
 	{
-		[Inject] protected readonly VM _viewModel;
+		protected VM _viewModel;
 		[Inject] readonly ISharpCoordinator _coordinator;
+
+		[SerializeField]
+		string _context;
+		public string Context { get => _context; set { _context = value; } }
 
 		IDisposable _disposable = Disposable.Empty;
 
+		protected virtual void Awake()
+		{
+			_viewModel = _coordinator
+							.For<VM>()
+							.Get(gameObject.scene.GetSceneContainer(), Context);
+		}
+
 		protected virtual void OnEnable()
 		{
-			_coordinator
-				.For<VM>()
-				.Get(gameObject.scene.GetSceneContainer());
-
 			_disposable = Subscribe();
 		}
 
@@ -37,6 +45,11 @@ namespace SHARP.Core
 			HandleSubscriptions(_viewModel, d);
 
 			return d.Build();
+		}
+
+		protected void Reset()
+		{
+			_context = GetType().GetCustomAttribute<ContextAttribute>()?.DefaultContext ?? "";
 		}
 
 		public void Dispose()
