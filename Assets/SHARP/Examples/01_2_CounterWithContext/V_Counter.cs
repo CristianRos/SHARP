@@ -4,10 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SHARP.Examples
+namespace SHARP.Examples.CounterWithContext
 {
 	[Context("Counter")]
-	public class V_CounterWithContext : View<VM_Counter>
+	public class V_Counter : View<VM_Counter>
 	{
 		[SerializeField] TMP_Text _countText;
 		[SerializeField] Button _increaseButton;

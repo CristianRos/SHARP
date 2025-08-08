@@ -1,7 +1,7 @@
 using Reflex.Core;
 using UnityEngine;
 
-namespace SHARP.Examples.Counter
+namespace SHARP.Examples.CounterSlider
 {
 	public class DI_Counter : MonoBehaviour, IInstaller
 	{

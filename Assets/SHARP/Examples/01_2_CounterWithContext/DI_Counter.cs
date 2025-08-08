@@ -1,9 +1,9 @@
 using Reflex.Core;
 using UnityEngine;
 
-namespace SHARP.Examples
+namespace SHARP.Examples.CounterWithContext
 {
-	public class DI_CounterWithContext : MonoBehaviour, IInstaller
+	public class DI_Counter : MonoBehaviour, IInstaller
 	{
 		public void InstallBindings(ContainerBuilder builder)
 		{

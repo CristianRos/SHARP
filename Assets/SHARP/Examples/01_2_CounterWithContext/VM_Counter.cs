@@ -1,7 +1,7 @@
 using R3;
 using SHARP.Core;
 
-namespace SHARP.Examples.Counter
+namespace SHARP.Examples.CounterWithContext
 {
 	public class VM_Counter : ViewModel
 	{

@@ -40,7 +40,7 @@ namespace SHARP.Core
 
 		public virtual VM Get(Container container, string context = null)
 		{
-			if (context == null)
+			if (string.IsNullOrEmpty(context))
 			{
 				Debug.Log($"Getting a new instance of {typeof(VM)}");
 
