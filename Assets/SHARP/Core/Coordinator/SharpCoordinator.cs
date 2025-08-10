@@ -18,6 +18,20 @@ namespace SHARP.Core
 			return @new;
 		}
 
+		public virtual ICoordinator<VM> ForViewModel<VM>(VM viewModel)
+			where VM : IViewModel
+		{
+			if (viewModel == null) throw new ArgumentNullException(nameof(viewModel));
+
+			var type = viewModel.GetType();
+
+			var forMethod = typeof(ISharpCoordinator)
+				.GetMethod(nameof(For))
+				.MakeGenericMethod(type);
+
+			return forMethod.Invoke(this, null) as ICoordinator<VM>;
+		}
+
 		public virtual void Clear<VM>()
 			where VM : IViewModel
 		{

@@ -1,60 +1,122 @@
 using System;
 using System.Reflection;
 using R3;
-using Reflex.Attributes;
 using Reflex.Extensions;
 using UnityEngine;
 
 namespace SHARP.Core
 {
-	public abstract class View<VM> : MonoBehaviour, IDisposable
+	public interface IView { }
+	public interface IView<VM> : IView, IDisposable
 		where VM : IViewModel
 	{
-		protected VM _viewModel;
-		[Inject] readonly ISharpCoordinator _coordinator;
+		ReactiveProperty<VM> ViewModel { get; }
+		string Context { get; set; }
+	}
 
-		[SerializeField]
-		string _context;
+	public abstract class View<VM> : MonoBehaviour, IView<VM>
+		where VM : IViewModel
+	{
+		public ReactiveProperty<VM> ViewModel { get; } = new();
+		protected ISharpCoordinator _coordinator;
+		[SerializeField] string _context;
 		public string Context { get => _context; set { _context = value; } }
 
 		IDisposable _disposable = Disposable.Empty;
+		bool _disposed = false;
 
 		protected virtual void Awake()
 		{
-			_viewModel = _coordinator
-							.For<VM>()
-							.Get(gameObject.scene.GetSceneContainer(), Context);
+			var sceneContainer = gameObject.scene.GetSceneContainer();
+			_coordinator = sceneContainer.Resolve<ISharpCoordinator>();
+
+			ViewModel.Value = _coordinator.For<VM>().Get(this, Context, sceneContainer);
 		}
 
 		protected virtual void OnEnable()
 		{
-			_disposable = Subscribe();
+			ViewModel
+				.Subscribe(_ => RefreshSubscriptions())
+				.AddTo(this);
 		}
 
 		protected virtual void OnDisable()
 		{
 			_disposable.Dispose();
+			_disposable = Disposable.Empty;
 		}
 
-		protected abstract void HandleSubscriptions(VM viewModel, DisposableBuilder d);
+		protected abstract void HandleSubscriptions(VM viewModel, ref DisposableBuilder d);
+
+		void RefreshSubscriptions()
+		{
+			_disposable.Dispose();
+			_disposable = Subscribe();
+		}
 
 		IDisposable Subscribe()
 		{
+
 			var d = Disposable.CreateBuilder();
 
-			HandleSubscriptions(_viewModel, d);
+			HandleSubscriptions(ViewModel.Value, ref d);
 
-			return d.Build();
+			return d.Build(); ;
+		}
+
+		protected virtual void RebindToContext(string toContext)
+		{
+			if (string.IsNullOrEmpty(toContext))
+			{
+				throw new ArgumentException("Context cannot be empty");
+			}
+
+			var sceneContainer = gameObject.scene.GetSceneContainer();
+
+			ViewModel.Value = _coordinator.For<VM>()
+				.RebindToContext(this, Context, toContext, sceneContainer);
+		}
+
+		protected virtual void Rebind(VM viewModel)
+		{
+			if (viewModel == null)
+			{
+				throw new ArgumentNullException(nameof(viewModel));
+			}
+
+			var sceneContainer = gameObject.scene.GetSceneContainer();
+
+			ViewModel.Value = _coordinator.For<VM>().CoordinateRebind(this, viewModel, sceneContainer);
+		}
+
+		protected virtual void UnsafeRebind(VM viewModel)
+		{
+			if (viewModel == null)
+			{
+				throw new ArgumentNullException(nameof(viewModel));
+			}
+
+			ViewModel.Value = viewModel;
 		}
 
 		protected void Reset()
 		{
-			_context = GetType().GetCustomAttribute<ContextAttribute>()?.DefaultContext ?? "";
+			Context = GetType().GetCustomAttribute<ContextAttribute>()?.DefaultContext ?? "";
 		}
+
+		void OnDestroy() => Dispose();
 
 		public void Dispose()
 		{
+			if (_disposed)
+			{
+				Debug.LogWarning($"Tried to dispose {GetType()} twice, ignoring this call");
+				return;
+			}
+			_disposed = true;
+
 			_disposable.Dispose();
+			_coordinator.For<VM>().UnregisterView(this, Context);
 		}
 	}
 }

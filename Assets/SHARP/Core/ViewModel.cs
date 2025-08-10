@@ -1,5 +1,6 @@
 using System;
 using R3;
+using UnityEngine;
 
 namespace SHARP.Core
 {
@@ -8,6 +9,7 @@ namespace SHARP.Core
 	public abstract class ViewModel : IViewModel
 	{
 		IDisposable _disposable = Disposable.Empty;
+		bool _disposed;
 
 		public ViewModel()
 		{
@@ -27,6 +29,12 @@ namespace SHARP.Core
 
 		public void Dispose()
 		{
+			if (_disposed)
+			{
+				Debug.LogWarning($"Tried to dispose {GetType()} twice, ignoring this call.");
+				return;
+			}
+
 			_disposable.Dispose();
 		}
 	}

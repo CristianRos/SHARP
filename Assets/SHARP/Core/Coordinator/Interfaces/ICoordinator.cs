@@ -8,10 +8,13 @@ namespace SHARP.Core
 	public interface ICoordinator<VM> : ICoordinator
 		where VM : IViewModel
 	{
-		void Register(VM viewModel, string context);
-		void Unregister(VM viewModel);
-
 		List<VM> GetAll();
-		VM Get(Container container, string context = null);
+		VM Get(IView<VM> view, string withContext, Container withContainer);
+
+		VM CoordinateRebind<V>(V view, VM toVM, Container withContainer)
+			where V : IView<VM>;
+		VM RebindToContext(IView<VM> view, string fromContext, string toContext, Container withContainer);
+		void UnregisterView(IView<VM> view, string context);
+		public bool IsDisposed { get; }
 	}
 }

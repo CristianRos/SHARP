@@ -9,77 +9,181 @@ namespace SHARP.Core
 	public class Coordinator<VM> : ICoordinator<VM>
 		where VM : IViewModel
 	{
-		protected List<VM> _viewModels = new();
-		protected Dictionary<string, VM> _vmByContext = new();
-		protected Dictionary<VM, string> _contextByVM = new();
+		protected Dictionary<string, List<IView>> _viewsByContext = new();
+		protected Dictionary<IView, string> _contextByView = new();
 
-		public virtual void Register(VM viewModel, string context = null)
+		protected List<VM> _activeViewModels = new();
+		protected List<VM> _orphanViewModels = new();
+		protected Dictionary<string, VM> _viewModelByContext = new();
+		protected Dictionary<VM, string> _contextByViewModel = new();
+
+		protected List<IView> _viewsWithoutContext = new();
+		protected List<VM> _activeViewModelsWithoutContext = new();
+		public Dictionary<IView, VM> _viewModelsByViewWithoutContext = new();
+		public Dictionary<VM, IView> _viewByViewModelWithoutContext = new();
+
+		public bool IsDisposed { get; private set; } = false;
+
+
+		void AddViewToContext(IView<VM> view, string toContext)
 		{
-			if (_viewModels.Contains(viewModel))
+			if (_contextByView.TryGetValue(view, out var currentContext))
 			{
-				throw new InvalidOperationException($"ViewModel {viewModel.GetType()} already registered");
+				throw new InvalidOperationException($"View {view.GetType()} already registered with context {currentContext}");
 			}
-			Debug.Log($"Registering {viewModel.GetType()} with context {context}");
 
-			_viewModels.Add(viewModel);
-			if (context != null) _vmByContext.Add(context, viewModel);
+			if (_viewsByContext.TryGetValue(toContext, out var views))
+			{
+				views.Add(view);
+			}
+			else
+			{
+				_viewsByContext.Add(toContext, new List<IView> { view });
+			}
+
+			_contextByView.Add(view, toContext);
+
+			view.Context = toContext;
 		}
 
-		public virtual void Unregister(VM viewModel)
+		void OrphanViewModel(VM viewModel)
 		{
-			if (!_viewModels.Contains(viewModel)) throw new InvalidOperationException($"ViewModel {viewModel.GetType()} not registered");
-
-			Debug.Log($"Unregistering {viewModel.GetType()} with context {_contextByVM[viewModel]}");
-
-			_viewModels.Remove(viewModel);
-			_vmByContext.Remove(_contextByVM[viewModel]);
-			_contextByVM.Remove(viewModel);
+			_activeViewModels.Remove(viewModel);
+			_orphanViewModels.Add(viewModel);
 		}
 
-		public virtual List<VM> GetAll() => _viewModels.ToList();
+		public virtual List<VM> GetAll() => _activeViewModels.ToList();
 
-		public virtual VM Get(Container container, string context = null)
+		public virtual VM Get(IView<VM> view, string withContext, Container withContainer)
 		{
-			if (string.IsNullOrEmpty(context))
+			// Return a new instance of a ViewModel if there is no context
+			if (string.IsNullOrEmpty(withContext))
 			{
 				Debug.Log($"Getting a new instance of {typeof(VM)}");
 
-				var viewModel = container.Resolve<VM>();
-				_viewModels.Add(viewModel);
+				var viewModel = withContainer.Resolve<VM>();
+				_activeViewModels.Add(viewModel);
+
+				_viewsWithoutContext.Add(view);
+				_activeViewModelsWithoutContext.Add(viewModel);
+				_viewModelsByViewWithoutContext.Add(view, viewModel);
+				_viewByViewModelWithoutContext.Add(viewModel, view);
 
 				return viewModel;
 			}
 
-			if (_vmByContext.TryGetValue(context, out var vm))
+			// Return the ViewModel with the context if it exists
+			if (_viewModelByContext.TryGetValue(withContext, out var vm))
 			{
-				Debug.Log($"Getting {typeof(VM)} with context {context}");
+				Debug.Log($"Getting {typeof(VM)} with context {withContext}");
+
+				AddViewToContext(view, withContext);
 				return vm;
 			}
 
-			Debug.Log($"Getting a new instance of {typeof(VM)} with context {context}");
+			// Return a new instance of a ViewModel with the specified context
+			Debug.Log($"Getting a new instance of {typeof(VM)} with context {withContext}");
 
-			var contextViewModel = container.Resolve<VM>();
+			var contextViewModel = withContainer.Resolve<VM>();
 
-			_viewModels.Add(contextViewModel);
-			_vmByContext.Add(context, contextViewModel);
-			_contextByVM.Add(contextViewModel, context);
+			_activeViewModels.Add(contextViewModel);
+			_viewModelByContext.Add(withContext, contextViewModel);
+			_contextByViewModel.Add(contextViewModel, withContext);
+			AddViewToContext(view, withContext);
 
 			return contextViewModel;
 		}
 
+		// Handles if the view should be rebound to a new context or an existing context
+		public virtual VM CoordinateRebind<V>(V view, VM toVM, Container withContainer)
+			where V : IView<VM>
+		{
+			var fromContext = view.Context;
+
+			if (_contextByViewModel.TryGetValue(toVM, out var toContext))
+			{
+				return RebindToContext(view, fromContext, toContext, withContainer);
+			}
+
+			if (!_viewByViewModelWithoutContext.TryGetValue(toVM, out var targetView))
+			{
+				throw new InvalidOperationException($"Cannot find view associated with ViewModel {toVM.GetType()}");
+			}
+
+			var newContext = $"__TransientContext__{Guid.NewGuid()}";
+
+			// Clear toVM and the related view from the coordinator
+			_activeViewModelsWithoutContext.Remove(toVM);
+			_viewByViewModelWithoutContext.Remove(toVM);
+			_viewModelsByViewWithoutContext.Remove(targetView);
+
+			// Give new context to toVM and the related view
+			_contextByView.Add(targetView, newContext);
+			_viewsByContext.Add(newContext, new List<IView> { targetView });
+
+			_viewModelByContext.Add(newContext, toVM);
+			_contextByViewModel.Add(toVM, newContext);
+
+			return RebindToContext(view, fromContext, newContext, withContainer);
+		}
+
+		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, Container withContainer)
+		{
+			var currentViewModel = view.ViewModel.CurrentValue;
+
+			if (string.IsNullOrEmpty(fromContext))
+			{
+				OrphanViewModel(currentViewModel);
+				return Get(view, toContext, withContainer);
+			}
+
+			if (fromContext == toContext)
+			{
+				Debug.LogWarning($"Trying to rebind to the same context {toContext} for {view.GetType()}, returning current view model");
+				return view.ViewModel.CurrentValue;
+			}
+
+			UnregisterView(view, fromContext);
+			return Get(view, toContext, withContainer);
+		}
+
+		public void UnregisterView(IView<VM> view, string context)
+		{
+			if (IsDisposed) return;
+
+			_contextByView.Remove(view);
+			if (_viewsByContext.TryGetValue(context, out var views))
+			{
+				views.Remove(view);
+				return;
+			}
+			if (_viewsWithoutContext.Contains(view))
+			{
+				_viewsWithoutContext.Remove(view);
+				_viewModelsByViewWithoutContext.Remove(view);
+				_viewByViewModelWithoutContext.Remove(view.ViewModel.CurrentValue);
+			}
+		}
+
 		public virtual void Dispose()
 		{
+			if (IsDisposed)
+			{
+				Debug.LogWarning($"Tried to dispose the coordinator twice, ignoring this call");
+				return;
+			}
+
 			Debug.Log($"Disposing Coordinator<{typeof(VM)}>");
-			Debug.Log($"{_viewModels.Count} view models registered");
-			Debug.Log($"{_vmByContext.Count} view models by context registered");
+			IsDisposed = true;
 
-			foreach (var vm in _viewModels) vm.Dispose();
-			_viewModels.Clear();
+			_activeViewModels.Clear();
+			_orphanViewModels.Clear();
 
-			foreach (var vm in _vmByContext.Values) vm.Dispose();
-			_vmByContext.Clear();
+			_viewModelByContext.Clear();
+			_contextByViewModel.Clear();
 
-			_contextByVM.Clear();
+			_viewsByContext.Clear();
+			_contextByView.Clear();
 		}
 	}
 }

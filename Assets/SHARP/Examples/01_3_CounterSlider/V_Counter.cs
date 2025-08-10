@@ -12,7 +12,7 @@ namespace SHARP.Examples.CounterSlider
 		[SerializeField] Button _increaseButton;
 		[SerializeField] Button _decreaseButton;
 
-		protected override void HandleSubscriptions(VM_Counter viewModel, DisposableBuilder d)
+		protected override void HandleSubscriptions(VM_Counter viewModel, ref DisposableBuilder d)
 		{
 			viewModel.DisplayCount
 				.Subscribe(value => _countText.text = value)

@@ -11,14 +11,14 @@ namespace SHARP.Examples.CounterSlider
 		[SerializeField] TMP_Text _countText;
 		[SerializeField] Slider _slider;
 
-		protected override void HandleSubscriptions(VM_Counter viewModel, DisposableBuilder d)
+		protected override void HandleSubscriptions(VM_Counter viewModel, ref DisposableBuilder d)
 		{
 			viewModel.DisplayCount
 				.Subscribe(value => _countText.text = value)
 				.AddTo(ref d);
 
 			_slider.OnValueChangedAsObservable()
-				.Subscribe(value => _viewModel.Set.Execute((int)value))
+				.Subscribe(value => viewModel.Set.Execute((int)value))
 				.AddTo(ref d);
 		}
 	}

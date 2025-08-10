@@ -12,18 +12,18 @@ namespace SHARP.Examples.Counter
 		[SerializeField] Button _increaseButton;
 		[SerializeField] Button _decreaseButton;
 
-		protected override void HandleSubscriptions(VM_Counter viewModel, DisposableBuilder d)
+		protected override void HandleSubscriptions(VM_Counter viewModel, ref DisposableBuilder d)
 		{
 			viewModel.DisplayCount
 				.Subscribe(value => _countText.text = value)
 				.AddTo(ref d);
 
 			_increaseButton.OnClickAsObservable()
-				.Subscribe(_viewModel.Increase.Execute)
+				.Subscribe(viewModel.Increase.Execute)
 				.AddTo(ref d);
 
 			_decreaseButton.OnClickAsObservable()
-				.Subscribe(_viewModel.Decrease.Execute)
+				.Subscribe(viewModel.Decrease.Execute)
 				.AddTo(ref d);
 		}
 	}

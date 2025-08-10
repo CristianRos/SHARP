@@ -8,7 +8,6 @@ namespace SHARP.Examples.CounterWithContext
 		ReactiveProperty<int> _count = new(0);
 		public ReactiveProperty<string> DisplayCount = new($"Count: 0");
 
-
 		public ReactiveCommand Increase { get; private set; } = new();
 		public ReactiveCommand Decrease { get; private set; } = new();
 
