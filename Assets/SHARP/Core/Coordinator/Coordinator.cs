@@ -9,50 +9,32 @@ namespace SHARP.Core
 	public class Coordinator<VM> : ICoordinator<VM>
 		where VM : IViewModel
 	{
+		#region Fields
+
+		protected List<VM> _active_ViewModels = new();
+		protected List<VM> _orphan_ViewModels = new();
+
+		// Without Context
+		protected List<IView> _views_WithoutContext = new();
+		protected List<VM> _viewModels_WithoutContext = new();
+		public Dictionary<IView, VM> _viewModelsByView_WithoutContext = new();
+		public Dictionary<VM, IView> _viewsByViewModel_WithoutContext = new();
+
+		// With Context
 		protected Dictionary<string, List<IView>> _viewsByContext = new();
 		protected Dictionary<IView, string> _contextByView = new();
 
-		protected List<VM> _activeViewModels = new();
-		protected List<VM> _orphanViewModels = new();
 		protected Dictionary<string, VM> _viewModelByContext = new();
 		protected Dictionary<VM, string> _contextByViewModel = new();
 
-		protected List<IView> _viewsWithoutContext = new();
-		protected List<VM> _activeViewModelsWithoutContext = new();
-		public Dictionary<IView, VM> _viewModelsByViewWithoutContext = new();
-		public Dictionary<VM, IView> _viewByViewModelWithoutContext = new();
-
 		public bool IsDisposed { get; private set; } = false;
 
+		#endregion
 
-		void AddViewToContext(IView<VM> view, string toContext)
-		{
-			if (_contextByView.TryGetValue(view, out var currentContext))
-			{
-				throw new InvalidOperationException($"View {view.GetType()} already registered with context {currentContext}");
-			}
 
-			if (_viewsByContext.TryGetValue(toContext, out var views))
-			{
-				views.Add(view);
-			}
-			else
-			{
-				_viewsByContext.Add(toContext, new List<IView> { view });
-			}
+		#region Public API Methods
 
-			_contextByView.Add(view, toContext);
-
-			view.Context = toContext;
-		}
-
-		void OrphanViewModel(VM viewModel)
-		{
-			_activeViewModels.Remove(viewModel);
-			_orphanViewModels.Add(viewModel);
-		}
-
-		public virtual List<VM> GetAll() => _activeViewModels.ToList();
+		public virtual List<VM> GetAll() => _active_ViewModels.ToList();
 
 		public virtual VM Get(IView<VM> view, string withContext, Container withContainer)
 		{
@@ -60,38 +42,20 @@ namespace SHARP.Core
 			if (string.IsNullOrEmpty(withContext))
 			{
 				Debug.Log($"Getting a new instance of {typeof(VM)}");
-
-				var viewModel = withContainer.Resolve<VM>();
-				_activeViewModels.Add(viewModel);
-
-				_viewsWithoutContext.Add(view);
-				_activeViewModelsWithoutContext.Add(viewModel);
-				_viewModelsByViewWithoutContext.Add(view, viewModel);
-				_viewByViewModelWithoutContext.Add(viewModel, view);
-
-				return viewModel;
+				return CreateViewModelWithoutContext(view, withContainer);
 			}
 
 			// Return the ViewModel with the context if it exists
 			if (_viewModelByContext.TryGetValue(withContext, out var vm))
 			{
 				Debug.Log($"Getting {typeof(VM)} with context {withContext}");
-
 				AddViewToContext(view, withContext);
 				return vm;
 			}
 
 			// Return a new instance of a ViewModel with the specified context
 			Debug.Log($"Getting a new instance of {typeof(VM)} with context {withContext}");
-
-			var contextViewModel = withContainer.Resolve<VM>();
-
-			_activeViewModels.Add(contextViewModel);
-			_viewModelByContext.Add(withContext, contextViewModel);
-			_contextByViewModel.Add(contextViewModel, withContext);
-			AddViewToContext(view, withContext);
-
-			return contextViewModel;
+			return CreateViewModelWithContext(view, withContext, withContainer);
 		}
 
 		// Handles if the view should be rebound to a new context or an existing context
@@ -105,26 +69,7 @@ namespace SHARP.Core
 				return RebindToContext(view, fromContext, toContext, withContainer);
 			}
 
-			if (!_viewByViewModelWithoutContext.TryGetValue(toVM, out var targetView))
-			{
-				throw new InvalidOperationException($"Cannot find view associated with ViewModel {toVM.GetType()}");
-			}
-
-			var newContext = $"__TransientContext__{Guid.NewGuid()}";
-
-			// Clear toVM and the related view from the coordinator
-			_activeViewModelsWithoutContext.Remove(toVM);
-			_viewByViewModelWithoutContext.Remove(toVM);
-			_viewModelsByViewWithoutContext.Remove(targetView);
-
-			// Give new context to toVM and the related view
-			_contextByView.Add(targetView, newContext);
-			_viewsByContext.Add(newContext, new List<IView> { targetView });
-
-			_viewModelByContext.Add(newContext, toVM);
-			_contextByViewModel.Add(toVM, newContext);
-
-			return RebindToContext(view, fromContext, newContext, withContainer);
+			return ConvertToContextualViewModel(view, toVM, fromContext, withContainer);
 		}
 
 		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, Container withContainer)
@@ -151,18 +96,8 @@ namespace SHARP.Core
 		{
 			if (IsDisposed) return;
 
-			_contextByView.Remove(view);
-			if (_viewsByContext.TryGetValue(context, out var views))
-			{
-				views.Remove(view);
-				return;
-			}
-			if (_viewsWithoutContext.Contains(view))
-			{
-				_viewsWithoutContext.Remove(view);
-				_viewModelsByViewWithoutContext.Remove(view);
-				_viewByViewModelWithoutContext.Remove(view.ViewModel.CurrentValue);
-			}
+			UnregisterFromContextTracking(view, context);
+			UnregisterFromWithoutContextTracking(view);
 		}
 
 		public virtual void Dispose()
@@ -176,14 +111,172 @@ namespace SHARP.Core
 			Debug.Log($"Disposing Coordinator<{typeof(VM)}>");
 			IsDisposed = true;
 
-			_activeViewModels.Clear();
-			_orphanViewModels.Clear();
+			ClearAllTrackingData();
+		}
 
+		#endregion
+
+
+		#region ViewModel Creation Methods
+
+		VM CreateViewModelWithoutContext(IView<VM> view, Container withContainer)
+		{
+			var viewModel = withContainer.Resolve<VM>();
+			_active_ViewModels.Add(viewModel);
+
+			_views_WithoutContext.Add(view);
+			_viewModels_WithoutContext.Add(viewModel);
+			_viewModelsByView_WithoutContext.Add(view, viewModel);
+			_viewsByViewModel_WithoutContext.Add(viewModel, view);
+
+			return viewModel;
+		}
+
+		VM CreateViewModelWithContext(IView<VM> view, string withContext, Container withContainer)
+		{
+			var contextViewModel = withContainer.Resolve<VM>();
+
+			_active_ViewModels.Add(contextViewModel);
+			_viewModelByContext.Add(withContext, contextViewModel);
+			_contextByViewModel.Add(contextViewModel, withContext);
+			AddViewToContext(view, withContext);
+
+			return contextViewModel;
+		}
+
+		VM ConvertToContextualViewModel(IView<VM> view, VM toVM, string fromContext, Container withContainer)
+		{
+			if (!_viewsByViewModel_WithoutContext.TryGetValue(toVM, out var targetView))
+			{
+				throw new InvalidOperationException($"Cannot find View associated with ViewModel {toVM.GetType()}");
+			}
+
+			var newContext = $"__TransientContext__{Guid.NewGuid()}";
+
+			RemoveFromWithoutContextTracking(toVM, targetView);
+			AddToContextTracking(toVM, targetView, newContext);
+
+			return RebindToContext(view, fromContext, newContext, withContainer);
+		}
+
+		#endregion
+
+
+		#region Context Management Methods
+
+		void AddViewToContext(IView<VM> view, string toContext)
+		{
+			if (_contextByView.TryGetValue(view, out var currentContext))
+			{
+				throw new InvalidOperationException($"View {view.GetType()} already registered with context {currentContext}");
+			}
+
+			if (_viewsByContext.TryGetValue(toContext, out var views))
+			{
+				views.Add(view);
+			}
+			else
+			{
+				_viewsByContext.Add(toContext, new List<IView> { view });
+			}
+
+			_contextByView.Add(view, toContext);
+			view.Context = toContext;
+		}
+
+		void AddToContextTracking(VM viewModel, IView targetView, string context)
+		{
+			_contextByView.Add(targetView, context);
+			_viewsByContext.Add(context, new List<IView> { targetView });
+			_viewModelByContext.Add(context, viewModel);
+			_contextByViewModel.Add(viewModel, context);
+		}
+
+		// TODO: Check if properly removing from lists and not the whole list
+		void RemoveFromWithoutContextTracking(VM viewModel, IView view)
+		{
+			_viewModels_WithoutContext.Remove(viewModel);
+			_viewsByViewModel_WithoutContext.Remove(viewModel);
+			_viewModelsByView_WithoutContext.Remove(view);
+			_views_WithoutContext.Remove(view);
+			_contextByView.Remove(view);
+		}
+
+		#endregion
+
+
+		#region Cleanup Methods
+
+		private void UnregisterFromContextTracking(IView<VM> view, string context)
+		{
+			_contextByView.Remove(view);
+			if (_viewsByContext.TryGetValue(context, out var views))
+			{
+				views.Remove(view);
+
+				// If no more views in this context, cleanup the ViewModel
+				if (views.Count == 0)
+				{
+					_viewsByContext.Remove(context);
+					if (_viewModelByContext.TryGetValue(context, out var vm))
+					{
+						_viewModelByContext.Remove(context);
+						_contextByViewModel.Remove(vm);
+						OrphanViewModel(vm);
+					}
+				}
+			}
+		}
+
+		void UnregisterFromWithoutContextTracking(IView<VM> view)
+		{
+			if (_views_WithoutContext.Contains(view))
+			{
+				_views_WithoutContext.Remove(view);
+				if (_viewModelsByView_WithoutContext.TryGetValue(view, out var vm))
+				{
+					_viewModelsByView_WithoutContext.Remove(view);
+					_viewsByViewModel_WithoutContext.Remove(vm);
+					OrphanViewModel(vm);
+				}
+			}
+		}
+
+		void OrphanViewModel(VM viewModel)
+		{
+			if (!_active_ViewModels.Remove(viewModel))
+				return;
+
+			_orphan_ViewModels.Add(viewModel);
+
+			// Clean up without context references
+			if (_viewsByViewModel_WithoutContext.TryGetValue(viewModel, out var view))
+			{
+				_viewsByViewModel_WithoutContext.Remove(viewModel);
+				_viewModelsByView_WithoutContext.Remove(view);
+				_views_WithoutContext.Remove(view);
+			}
+		}
+
+		void ClearAllTrackingData()
+		{
+			// ViewModel lifecycle
+			_active_ViewModels.Clear();
+			_orphan_ViewModels.Clear();
+
+			// Context-based tracking
 			_viewModelByContext.Clear();
 			_contextByViewModel.Clear();
-
 			_viewsByContext.Clear();
 			_contextByView.Clear();
+
+			// Without-context tracking
+			_views_WithoutContext.Clear();
+			_viewModels_WithoutContext.Clear();
+			_viewModelsByView_WithoutContext.Clear();
+			_viewsByViewModel_WithoutContext.Clear();
 		}
+
+		#endregion
 	}
 }
