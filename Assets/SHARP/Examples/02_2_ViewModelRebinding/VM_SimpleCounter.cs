@@ -9,7 +9,7 @@ namespace SHARP.Examples.ViewModelRebinding
 		public ReactiveProperty<string> DisplayCount = new($"0");
 		public ReactiveCommand Increase { get; private set; } = new();
 
-		protected override void HandleSubscriptions(DisposableBuilder d)
+		protected override void HandleSubscriptions(ref DisposableBuilder d)
 		{
 			_count
 				.Subscribe(value => DisplayCount.Value = $"{value}")

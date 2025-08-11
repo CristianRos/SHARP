@@ -1,22 +1,25 @@
 using R3;
 using SHARP.Core;
 
-namespace SHARP.Examples.ContextRebinding
+namespace SHARP.Examples.DiscoveryDemo
 {
 	public class VM_SimpleCounter : ViewModel
 	{
-		ReactiveProperty<int> _count = new(0);
-		public ReactiveProperty<string> DisplayCount = new($"0");
+		public ReactiveProperty<int> Count = new(0);
+		public ReactiveProperty<string> DisplayCount = new("0");
+
 		public ReactiveCommand Increase { get; private set; } = new();
+		public ReactiveCommand Highlight { get; private set; } = new();
+		public ReactiveCommand Unhighlight { get; private set; } = new();
 
 		protected override void HandleSubscriptions(ref DisposableBuilder d)
 		{
-			_count
+			Count
 				.Subscribe(value => DisplayCount.Value = $"{value}")
 				.AddTo(ref d);
 
 			Increase
-				.Subscribe(_ => _count.Value++)
+				.Subscribe(_ => Count.Value++)
 				.AddTo(ref d);
 		}
 	}

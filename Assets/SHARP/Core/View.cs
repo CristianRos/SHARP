@@ -17,18 +17,28 @@ namespace SHARP.Core
 	public abstract class View<VM> : MonoBehaviour, IView<VM>
 		where VM : IViewModel
 	{
+		#region Fields
+
 		public ReactiveProperty<VM> ViewModel { get; } = new();
 		protected ISharpCoordinator _coordinator;
+		protected ISharpDiscovery _discovery;
+
 		[SerializeField] string _context;
 		public string Context { get => _context; set { _context = value; } }
 
 		IDisposable _disposable = Disposable.Empty;
 		bool _disposed = false;
 
+		#endregion
+
+
+		#region Unity Messages
+
 		protected virtual void Awake()
 		{
 			var sceneContainer = gameObject.scene.GetSceneContainer();
 			_coordinator = sceneContainer.Resolve<ISharpCoordinator>();
+			_discovery = sceneContainer.Resolve<ISharpDiscovery>();
 
 			ViewModel.Value = _coordinator.For<VM>().Get(this, Context, sceneContainer);
 		}
@@ -45,6 +55,18 @@ namespace SHARP.Core
 			_disposable.Dispose();
 			_disposable = Disposable.Empty;
 		}
+
+		protected void Reset()
+		{
+			Context = GetType().GetCustomAttribute<ContextAttribute>()?.DefaultContext ?? "";
+		}
+
+		void OnDestroy() => Dispose();
+
+		#endregion
+
+
+		#region Subscriptions
 
 		protected abstract void HandleSubscriptions(VM viewModel, ref DisposableBuilder d);
 
@@ -63,6 +85,11 @@ namespace SHARP.Core
 
 			return d.Build(); ;
 		}
+
+		#endregion
+
+
+		#region Rebind
 
 		protected virtual void RebindToContext(string toContext)
 		{
@@ -99,12 +126,10 @@ namespace SHARP.Core
 			ViewModel.Value = viewModel;
 		}
 
-		protected void Reset()
-		{
-			Context = GetType().GetCustomAttribute<ContextAttribute>()?.DefaultContext ?? "";
-		}
+		#endregion
 
-		void OnDestroy() => Dispose();
+
+		#region Cleanup
 
 		public void Dispose()
 		{
@@ -118,5 +143,7 @@ namespace SHARP.Core
 			_disposable.Dispose();
 			_coordinator.For<VM>().UnregisterView(this, Context);
 		}
+
+		#endregion
 	}
 }

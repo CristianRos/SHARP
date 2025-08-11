@@ -11,23 +11,35 @@ namespace SHARP.Core
 	{
 		#region Fields
 
-		protected List<VM> _active_ViewModels = new();
-		protected List<VM> _orphan_ViewModels = new();
+		List<VM> _active_ViewModels = new();
+		List<VM> _orphan_ViewModels = new();
 
 		// Without Context
-		protected List<IView> _views_WithoutContext = new();
-		protected List<VM> _viewModels_WithoutContext = new();
-		public Dictionary<IView, VM> _viewModelsByView_WithoutContext = new();
-		public Dictionary<VM, IView> _viewsByViewModel_WithoutContext = new();
+		List<IView> _views_WithoutContext = new();
+		List<VM> _viewModels_WithoutContext = new();
+
+		Dictionary<IView, VM> _viewModelsByView_WithoutContext = new();
+		Dictionary<VM, IView> _viewsByViewModel_WithoutContext = new();
 
 		// With Context
-		protected Dictionary<string, List<IView>> _viewsByContext = new();
-		protected Dictionary<IView, string> _contextByView = new();
+		Dictionary<string, List<IView>> _viewsByContext = new();
+		Dictionary<IView, string> _contextByView = new();
 
-		protected Dictionary<string, VM> _viewModelByContext = new();
-		protected Dictionary<VM, string> _contextByViewModel = new();
+		Dictionary<string, VM> _viewModelByContext = new();
+		Dictionary<VM, string> _contextByViewModel = new();
 
-		public bool IsDisposed { get; private set; } = false;
+		public bool IsDisposed = false;
+
+		public List<VM> Active_ViewModels => _active_ViewModels;
+		public List<VM> Orphan_ViewModels => _orphan_ViewModels;
+		public List<IView> Views_WithoutContext => _views_WithoutContext;
+		public List<VM> ViewModels_WithoutContext => _viewModels_WithoutContext;
+		public Dictionary<IView, VM> ViewModelsByView_WithoutContext => _viewModelsByView_WithoutContext;
+		public Dictionary<VM, IView> ViewsByViewModel_WithoutContext => _viewsByViewModel_WithoutContext;
+		public Dictionary<string, List<IView>> ViewsByContext => _viewsByContext;
+		public Dictionary<IView, string> ContextByView => _contextByView;
+		public Dictionary<string, VM> ViewModelByContext => _viewModelByContext;
+		public Dictionary<VM, string> ContextByViewModel => _contextByViewModel;
 
 		#endregion
 
@@ -188,18 +200,19 @@ namespace SHARP.Core
 		{
 			_contextByView.Add(targetView, context);
 			_viewsByContext.Add(context, new List<IView> { targetView });
+
 			_viewModelByContext.Add(context, viewModel);
 			_contextByViewModel.Add(viewModel, context);
 		}
 
-		// TODO: Check if properly removing from lists and not the whole list
 		void RemoveFromWithoutContextTracking(VM viewModel, IView view)
 		{
+			_contextByView.Remove(view);
+
+			_views_WithoutContext.Remove(view);
 			_viewModels_WithoutContext.Remove(viewModel);
 			_viewsByViewModel_WithoutContext.Remove(viewModel);
 			_viewModelsByView_WithoutContext.Remove(view);
-			_views_WithoutContext.Remove(view);
-			_contextByView.Remove(view);
 		}
 
 		#endregion

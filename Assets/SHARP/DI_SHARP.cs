@@ -9,6 +9,7 @@ namespace SHARP
 		public void InstallBindings(ContainerBuilder builder)
 		{
 			builder.AddSingleton(typeof(SharpCoordinator), typeof(ISharpCoordinator));
+			builder.AddSingleton(typeof(SharpDiscovery), typeof(ISharpDiscovery));
 		}
 	}
 }

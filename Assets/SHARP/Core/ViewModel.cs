@@ -8,24 +8,37 @@ namespace SHARP.Core
 
 	public abstract class ViewModel : IViewModel
 	{
+		#region Fields
+
 		IDisposable _disposable = Disposable.Empty;
 		bool _disposed;
+
+		#endregion
+
 
 		public ViewModel()
 		{
 			Subscribe();
 		}
 
+
+		#region Subscriptions
+
 		void Subscribe()
 		{
 			var d = Disposable.CreateBuilder();
 
-			HandleSubscriptions(d);
+			HandleSubscriptions(ref d);
 
 			_disposable = d.Build();
 		}
 
-		protected abstract void HandleSubscriptions(DisposableBuilder d);
+		protected abstract void HandleSubscriptions(ref DisposableBuilder d);
+
+		#endregion
+
+
+		#region Cleanup
 
 		public void Dispose()
 		{
@@ -37,5 +50,7 @@ namespace SHARP.Core
 
 			_disposable.Dispose();
 		}
+
+		#endregion
 	}
 }

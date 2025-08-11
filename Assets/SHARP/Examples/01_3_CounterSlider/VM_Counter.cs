@@ -16,7 +16,7 @@ namespace SHARP.Examples.CounterSlider
 		public ReactiveCommand Increase { get; private set; } = new();
 		public ReactiveCommand Decrease { get; private set; } = new();
 
-		protected override void HandleSubscriptions(DisposableBuilder d)
+		protected override void HandleSubscriptions(ref DisposableBuilder d)
 		{
 			_count
 				.Subscribe(value => DisplayCount.Value = $"Count: {value}")
