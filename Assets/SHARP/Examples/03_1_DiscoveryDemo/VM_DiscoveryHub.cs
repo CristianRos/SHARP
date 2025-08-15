@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Linq;
 using R3;
 using SHARP.Core;
@@ -36,13 +35,12 @@ namespace SHARP.Examples.DiscoveryDemo
 					}
 
 					var query = _discovery.For<VM_SimpleCounter>()
-						.InContext(context);
+						.InContext(context)
+						.All();
 
-					var results = query.All().ToList();
+					Debug.Log($"Found {query.Count()} counters in context {context}");
 
-					Debug.Log($"Found {results.Count()} counters in context {context}");
-
-					foreach (var vm in results)
+					foreach (var vm in query)
 					{
 						vm.Highlight.Execute(Unit.Default);
 					}
@@ -114,22 +112,28 @@ namespace SHARP.Examples.DiscoveryDemo
 						counter.Unhighlight.Execute(Unit.Default);
 					}
 
-					// Transform ancestorReference = reference;
-					// for (int i = 0; i < depth; i++)
-					// {
-					// 	ancestorReference = ancestorReference.parent;
-					// }
+					Transform ancestorReference = reference;
+					for (int i = 0; i < depth; i++)
+					{
+						ancestorReference = ancestorReference.parent;
+					}
 
-					var counters = _discovery.For<VM_SimpleCounter>()
-						.FromTransform(reference)
-						.Descendants()
-						.WithMaxDepth(depth)
-						.All().ToList();
+					// var counters = _discovery.For<VM_SimpleCounter>()
+					// 	.FromTransform(ancestorReference)
+					// 	.Descendants()
+					// 	.AtDepth(1)
+					// 	.All().ToList();
+
+					var whatever = _discovery.For<VM_SimpleCounter>()
+						.InAnyContext()
+						.From(reference)
+						.WithinDepth(1)
+						.All();
 
 
-					Debug.Log($"Found {counters.Count()} counters at depth {depth}");
+					// Debug.Log($"Found {counters.Count()} counters at depth {depth}");
 
-					foreach (var vm in counters)
+					foreach (var vm in whatever)
 					{
 						vm.Highlight.Execute(Unit.Default);
 					}

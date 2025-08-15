@@ -11,22 +11,24 @@ namespace SHARP.Core
 	{
 		#region Fields
 
-		List<VM> _active_ViewModels = new();
-		List<VM> _orphan_ViewModels = new();
+		readonly List<VM> _active_ViewModels = new();
+		readonly List<VM> _orphan_ViewModels = new();
 
 		// Without Context
-		List<IView> _views_WithoutContext = new();
-		List<VM> _viewModels_WithoutContext = new();
+		readonly List<IView> _views_WithoutContext = new();
+		readonly List<VM> _viewModels_WithoutContext = new();
 
-		Dictionary<IView, VM> _viewModelsByView_WithoutContext = new();
-		Dictionary<VM, IView> _viewsByViewModel_WithoutContext = new();
+		readonly Dictionary<IView, VM> _viewModelsByView_WithoutContext = new();
+		readonly Dictionary<VM, IView> _viewsByViewModel_WithoutContext = new();
 
 		// With Context
-		Dictionary<string, List<IView>> _viewsByContext = new();
-		Dictionary<IView, string> _contextByView = new();
+		readonly Dictionary<string, List<IView>> _viewsByContext = new();
+		readonly Dictionary<IView, string> _contextByView = new();
 
-		Dictionary<string, VM> _viewModelByContext = new();
-		Dictionary<VM, string> _contextByViewModel = new();
+		readonly Dictionary<string, VM> _viewModelByContext = new();
+		readonly Dictionary<VM, string> _contextByViewModel = new();
+		// TODO
+		//readonly HashSet<string> _keepAliveContexts = new();
 
 		public bool IsDisposed = false;
 
@@ -46,7 +48,7 @@ namespace SHARP.Core
 
 		#region Public API Methods
 
-		public virtual List<VM> GetAll() => _active_ViewModels.ToList();
+		public virtual List<VM> GetAll() => _active_ViewModels.Concat(_orphan_ViewModels).ToList();
 
 		public virtual VM Get(IView<VM> view, string withContext, Container withContainer)
 		{

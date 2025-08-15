@@ -16,7 +16,7 @@ namespace SHARP.Examples.DiscoveryDemo
 
 		[SerializeField] Button _discoverMixedButton;
 
-		[SerializeField] Transform _underParent;
+		[SerializeField] Transform _referenceTransform;
 
 		[SerializeField] Button _discoverParentDepth0Button;
 		[SerializeField] Button _discoverParentDepth1Button;
@@ -37,15 +37,15 @@ namespace SHARP.Examples.DiscoveryDemo
 				.AddTo(ref d);
 
 			_discoverParentDepth0Button.OnClickAsObservable()
-				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_underParent, 1)))
+				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_referenceTransform, 1)))
 				.AddTo(ref d);
 
 			_discoverParentDepth1Button.OnClickAsObservable()
-				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_underParent, 2)))
+				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_referenceTransform, 2)))
 				.AddTo(ref d);
 
 			_discoverParentDepth2Button.OnClickAsObservable()
-				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_underParent, 3)))
+				.Subscribe(_ => viewModel.DiscoverParentCommand.Execute((_referenceTransform, 3)))
 				.AddTo(ref d);
 		}
 	}
