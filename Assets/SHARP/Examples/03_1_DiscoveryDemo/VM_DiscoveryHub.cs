@@ -125,11 +125,10 @@ namespace SHARP.Examples.DiscoveryDemo
 					// 	.All().ToList();
 
 					var whatever = _discovery.For<VM_SimpleCounter>()
-						.InAnyContext()
-						.From(reference)
-						.WithinDepth(1)
+						.WithoutContext()
+						.ChildrenOf(reference, 2, true)
+						.Where(vm => vm.Count.Value > 1)
 						.All();
-
 
 					// Debug.Log($"Found {counters.Count()} counters at depth {depth}");
 

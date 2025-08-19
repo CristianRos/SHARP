@@ -6,7 +6,9 @@ using UnityEngine;
 
 namespace SHARP.Core
 {
-	public interface IView { }
+	public interface IView
+	{ }
+
 	public interface IView<VM> : IView, IDisposable
 		where VM : IViewModel
 	{

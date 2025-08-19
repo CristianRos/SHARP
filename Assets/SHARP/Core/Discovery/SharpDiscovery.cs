@@ -9,7 +9,7 @@ namespace SHARP.Core
 			_sharpCoordinator = sharpCoordinator;
 		}
 
-		public IExecutableQuery<VM> For<VM>()
+		public IDiscoveryQuery<VM> For<VM>()
 			where VM : IViewModel
 		{
 			return new DiscoveryQuery<VM>(_sharpCoordinator.For<VM>());

@@ -198,30 +198,16 @@ namespace SHARP.Core
 			switch (_coordinatorConstraints.ContextType)
 			{
 				case CoordinatorContextType.ContextName:
-					string ContextName = _coordinatorConstraints.ContextName;
-					if (_coordinator.ViewModelByContext.TryGetValue(ContextName, out var viewModel))
-					{
-						queryResult = queryResult.Append(viewModel);
-					}
+					queryResult = queryResult.Append(_coordinator.GetViewModel(_coordinatorConstraints.ContextName));
 					break;
 				case CoordinatorContextType.ContextMatcher:
-					var matchingContexts = _coordinator.ViewModelByContext.Keys
-						.Where(_coordinatorConstraints.ContextMatcher);
-
-					foreach (var context in matchingContexts)
-					{
-						if (_coordinator.ViewModelByContext.TryGetValue(context, out var vm))
-						{
-							queryResult = queryResult.Append(vm);
-						}
-					}
+					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithContext(_coordinatorConstraints.ContextMatcher));
 					break;
 				case CoordinatorContextType.WithAnyContext:
-					var viewModels = _coordinator.ViewModelByContext.Values.ToList();
-					queryResult = queryResult.Concat(viewModels);
+					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithContext().ToList());
 					break;
 				case CoordinatorContextType.WithoutContext:
-					queryResult = queryResult.Concat(_coordinator.ViewModels_WithoutContext.ToList());
+					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithoutContext().ToList());
 					break;
 				default:
 					break;
@@ -230,11 +216,11 @@ namespace SHARP.Core
 			switch (_coordinatorConstraints.StateType)
 			{
 				case CoordinatorStateType.Active:
-					var activeViewModels = _coordinator.Active_ViewModels.ToList();
+					var activeViewModels = _coordinator.GetActive().ToList();
 					queryResult = queryResult.Intersect(activeViewModels);
 					break;
 				case CoordinatorStateType.Orphaned:
-					var orphanedViewModels = _coordinator.Orphan_ViewModels.ToList();
+					var orphanedViewModels = _coordinator.GetOrphan().ToList();
 					queryResult = queryResult.Intersect(orphanedViewModels);
 					break;
 				default:
