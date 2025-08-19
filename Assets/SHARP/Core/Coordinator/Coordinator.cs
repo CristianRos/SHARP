@@ -240,6 +240,8 @@ namespace SHARP.Core
 		{
 			_bi_contexts_setViews.Add(context, targetView);
 			_bi_contexts_viewModels.Add(context, viewModel);
+
+			targetView.Context = context;
 		}
 
 		void RemoveFromWithoutContextTracking(VM viewModel, IView<VM> view)
