@@ -118,21 +118,15 @@ namespace SHARP.Examples.DiscoveryDemo
 						ancestorReference = ancestorReference.parent;
 					}
 
-					// var counters = _discovery.For<VM_SimpleCounter>()
-					// 	.FromTransform(ancestorReference)
-					// 	.Descendants()
-					// 	.AtDepth(1)
-					// 	.All().ToList();
-
-					var whatever = _discovery.For<VM_SimpleCounter>()
+					var counters = _discovery.For<VM_SimpleCounter>()
 						.WithoutContext()
-						.DescendantsOf(reference, 2, true)
+						.DescendantsOf(reference, depth, false)
 						.Where(vm => vm.Count.Value > 1)
 						.All();
 
-					// Debug.Log($"Found {counters.Count()} counters at depth {depth}");
+					Debug.Log($"Found {counters.Count()} counters at depth {depth}");
 
-					foreach (var vm in whatever)
+					foreach (var vm in counters)
 					{
 						vm.Highlight.Execute(Unit.Default);
 					}

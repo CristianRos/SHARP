@@ -15,7 +15,7 @@ namespace SHARP.Core
 			ReferenceTransform = null;
 			RelationType = SpatialRelationType.None;
 			DepthLimit = null;
-			WithinDepth = false;
+			WithinDepth = true;
 		}
 
 		SpatialConstraint(

@@ -83,7 +83,7 @@ namespace SHARP.Core
 		public IDiscoveryQuery<VM> DescendantsOf(Transform reference, int? maxDepth = null, bool withinDepth = true)
 		{
 			_spatialConstraints ??= new();
-			_spatialConstraints.DescendantsOf(reference, maxDepth);
+			_spatialConstraints.DescendantsOf(reference, maxDepth, withinDepth);
 			return this;
 		}
 		public IDiscoveryQuery<VM> SiblingsOf(Transform reference)
@@ -386,18 +386,15 @@ namespace SHARP.Core
 				Transform child = current.GetChild(i);
 				int childDepth = currentDepth + 1;
 
-				// Add everything under targetDepth when withinDepth is true if not, add only at targetDepth
 				if (withinDepth ? childDepth <= targetDepth : childDepth == targetDepth)
 				{
 					results.Add(child);
 				}
 
-				if (childDepth < targetDepth)
-				{
-					CollectTransformsAtDepth(child, childDepth, targetDepth, withinDepth, results);
-				}
+				CollectTransformsAtDepth(child, childDepth, targetDepth, withinDepth, results);
 			}
 		}
+
 
 		#endregion
 	}
