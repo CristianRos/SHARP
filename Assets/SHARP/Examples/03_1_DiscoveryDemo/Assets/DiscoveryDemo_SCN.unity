@@ -252,7 +252,7 @@ GameObject:
   - component: {fileID: 99505997}
   - component: {fileID: 99505998}
   m_Layer: 5
-  m_Name: Depth_2
+  m_Name: '[H_Flex] Depth_2'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -323,7 +323,7 @@ GameObject:
   - component: {fileID: 289900853}
   - component: {fileID: 289900854}
   m_Layer: 5
-  m_Name: +++Grid Layout+++
+  m_Name: '[Grid] Context Buttons'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -387,7 +387,7 @@ GameObject:
   - component: {fileID: 301821891}
   - component: {fileID: 301821892}
   m_Layer: 5
-  m_Name: +++Vertical Layout+++
+  m_Name: '[V_Flex] Main Wrapper'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -569,7 +569,7 @@ GameObject:
   - component: {fileID: 452065251}
   - component: {fileID: 452065252}
   m_Layer: 5
-  m_Name: +++Grid Layout+++
+  m_Name: '[Grid] Spatial Buttons'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1035,7 +1035,7 @@ GameObject:
   - component: {fileID: 867469107}
   - component: {fileID: 867469108}
   m_Layer: 5
-  m_Name: Depth_3
+  m_Name: '[H_Flex] Depth_3'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1429,7 +1429,7 @@ GameObject:
   - component: {fileID: 1102643903}
   - component: {fileID: 1102643904}
   m_Layer: 5
-  m_Name: +++Horizontal Layout+++
+  m_Name: '[H_Flex] Buttons Wrapper'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2609,7 +2609,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 731489569476602619, guid: c3b46bdc074592840a731bb8dd23454f, type: 3}
       propertyPath: m_Name
-      value: Discovery Hub
+      value: '[H_Flex] Discovery Hub'
       objectReference: {fileID: 0}
     - target: {fileID: 1604025463924455662, guid: c3b46bdc074592840a731bb8dd23454f, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2762,7 +2762,7 @@ PrefabInstance:
     - target: {fileID: 4751307187258024191, guid: c3b46bdc074592840a731bb8dd23454f, type: 3}
       propertyPath: _referenceTransform
       value: 
-      objectReference: {fileID: 639103154}
+      objectReference: {fileID: 452065251}
     - target: {fileID: 4751307187258024191, guid: c3b46bdc074592840a731bb8dd23454f, type: 3}
       propertyPath: _discoverParentDepth0Button
       value: 

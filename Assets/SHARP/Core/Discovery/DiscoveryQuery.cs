@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using UnityEngine;
 
@@ -12,84 +11,62 @@ namespace SHARP.Core
 		#region Fields and Constructor
 
 		readonly ICoordinator<VM> _coordinator;
-		readonly CoordinatorConstraint<VM> _coordinatorConstraints;
-		readonly SpatialConstraint<VM> _spatialConstraints;
-		readonly IReadOnlyList<PredicateConstraint<VM>> _predicateConstraints;
+		CoordinatorConstraint<VM> _coordinatorConstraints;
+		SpatialConstraint<VM> _spatialConstraints;
+		List<Func<VM, bool>> _predicates;
 
 		public DiscoveryQuery(ICoordinator<VM> coordinator)
 		{
 			_coordinator = coordinator;
 			_coordinatorConstraints = null;
 			_spatialConstraints = null;
-			_predicateConstraints = new List<PredicateConstraint<VM>>();
-		}
-
-		DiscoveryQuery(
-			ICoordinator<VM> coordinator,
-			CoordinatorConstraint<VM> contextConstraints,
-			SpatialConstraint<VM> spatialConstraint,
-			IReadOnlyList<PredicateConstraint<VM>> predicateConstraints)
-		{
-			_coordinator = coordinator;
-			_coordinatorConstraints = contextConstraints;
-			_spatialConstraints = spatialConstraint;
-			_predicateConstraints = predicateConstraints;
+			_predicates = new();
 		}
 
 		#endregion
 
 		#region Coordinator based filtering
 
-		DiscoveryQuery<VM> NewContextualConstrainedQuery(CoordinatorConstraint<VM> constraint)
-		{
-			return new(
-				_coordinator,
-				constraint,
-				_spatialConstraints,
-				_predicateConstraints
-			);
-		}
-
 		public IDiscoveryQuery<VM> InContext(string contextName)
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.ForContext(contextName)
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ForContext(contextName);
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> WhereContext(Func<string, bool> contextMatcher)
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.WithContextMatcher(contextMatcher)
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.WithContextMatcher(contextMatcher);
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> InAnyContext()
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.ThatRequiresAnyContext()
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ThatRequiresAnyContext();
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> WithoutContext()
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.ThatExcludesContext()
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ThatExcludesContext();
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> ThatAreActive()
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.ThatAreActive()
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ThatAreActive();
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> ThatAreOrphaned()
 		{
-			return NewContextualConstrainedQuery(
-				CoordinatorConstraint<VM>.ThatAreOrphaned()
-			);
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ThatAreOrphaned();
+			return this;
 		}
 
 		#endregion
@@ -97,77 +74,52 @@ namespace SHARP.Core
 
 		#region Spatial filtering
 
-		DiscoveryQuery<VM> NewSpatialConstrainedQuery(SpatialConstraint<VM> constraint)
+		public IDiscoveryQuery<VM> ChildrenOf(Transform reference)
 		{
-			return new(
-				_coordinator,
-				_coordinatorConstraints,
-				constraint,
-				_predicateConstraints
-			);
+			_spatialConstraints ??= new();
+			_spatialConstraints.ChildrenOf(reference);
+			return this;
 		}
-
-		public IDiscoveryQuery<VM> ChildrenOf(Transform reference, int? depth = null, bool withinDepth = true)
+		public IDiscoveryQuery<VM> DescendantsOf(Transform reference, int? maxDepth = null, bool withinDepth = true)
 		{
-			return NewSpatialConstrainedQuery(
-				SpatialConstraint<VM>.ChildrenOf(reference, depth, withinDepth)
-			);
-		}
-		public IDiscoveryQuery<VM> DescendantsOf(Transform reference, int? maxDepth = null)
-		{
-			return NewSpatialConstrainedQuery(
-				SpatialConstraint<VM>.DescendantsOf(reference, maxDepth)
-			);
+			_spatialConstraints ??= new();
+			_spatialConstraints.DescendantsOf(reference, maxDepth);
+			return this;
 		}
 		public IDiscoveryQuery<VM> SiblingsOf(Transform reference)
 		{
-			return NewSpatialConstrainedQuery(
-				SpatialConstraint<VM>.SiblingsOf(reference)
-			);
+			_spatialConstraints ??= new();
+			_spatialConstraints.SiblingsOf(reference);
+			return this;
 		}
 		public IDiscoveryQuery<VM> SiblingsOfIncludingSelf(Transform reference)
 		{
-			return NewSpatialConstrainedQuery(
-				SpatialConstraint<VM>.SiblingsOfIncludingSelf(reference)
-			);
+			_spatialConstraints ??= new();
+			_spatialConstraints.SiblingsOfIncludingSelf(reference);
+			return this;
 		}
-
 
 		#endregion
 
 
 		#region Predicate filtering
 
-		DiscoveryQuery<VM> NewPredicateConstrainedQuery(PredicateConstraint<VM> constraint)
-		{
-			var predicateConstraints = new List<PredicateConstraint<VM>>(_predicateConstraints) { constraint };
-
-			return new(
-				_coordinator,
-				_coordinatorConstraints,
-				_spatialConstraints,
-				predicateConstraints
-			);
-		}
-
 		public IDiscoveryQuery<VM> Where(Func<VM, bool> predicate)
 		{
-			return NewPredicateConstrainedQuery(
-				PredicateConstraint<VM>.Where(predicate)
-			);
+			_predicates.Add(predicate);
+			return this;
 		}
 
 		public IDiscoveryQuery<VM> WhereAll(params Func<VM, bool>[] predicates)
 		{
-			return NewPredicateConstrainedQuery(
-				PredicateConstraint<VM>.WhereAll(predicates)
-			);
+			_predicates.AddRange(predicates);
+			return this;
 		}
+
 		public IDiscoveryQuery<VM> WhereAny(params Func<VM, bool>[] predicates)
 		{
-			return NewPredicateConstrainedQuery(
-				PredicateConstraint<VM>.WhereAny(predicates)
-			);
+			_predicates.Add(vm => predicates.Any(p => p(vm)));
+			return this;
 		}
 
 		#endregion
@@ -193,21 +145,22 @@ namespace SHARP.Core
 				return _coordinator.GetAll();
 			}
 
-			IEnumerable<VM> queryResult = Enumerable.Empty<VM>();
+			HashSet<VM> results = new();
 
 			switch (_coordinatorConstraints.ContextType)
 			{
 				case CoordinatorContextType.ContextName:
-					queryResult = queryResult.Append(_coordinator.GetViewModel(_coordinatorConstraints.ContextName));
+					VM vm = _coordinator.GetViewModel(_coordinatorConstraints.ContextName);
+					if (vm != null) results.Add(vm);
 					break;
 				case CoordinatorContextType.ContextMatcher:
-					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithContext(_coordinatorConstraints.ContextMatcher));
+					results.UnionWith(_coordinator.GetViewModelsWithContext(_coordinatorConstraints.ContextMatcher));
 					break;
 				case CoordinatorContextType.WithAnyContext:
-					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithContext().ToList());
+					results.UnionWith(_coordinator.GetViewModelsWithContext());
 					break;
 				case CoordinatorContextType.WithoutContext:
-					queryResult = queryResult.Concat(_coordinator.GetViewModelsWithoutContext().ToList());
+					results.UnionWith(_coordinator.GetViewModelsWithoutContext());
 					break;
 				default:
 					break;
@@ -216,18 +169,16 @@ namespace SHARP.Core
 			switch (_coordinatorConstraints.StateType)
 			{
 				case CoordinatorStateType.Active:
-					var activeViewModels = _coordinator.GetActive().ToList();
-					queryResult = queryResult.Intersect(activeViewModels);
+					results.IntersectWith(_coordinator.GetActive());
 					break;
 				case CoordinatorStateType.Orphaned:
-					var orphanedViewModels = _coordinator.GetOrphan().ToList();
-					queryResult = queryResult.Intersect(orphanedViewModels);
+					results.IntersectWith(_coordinator.GetOrphan());
 					break;
 				default:
 					break;
 			}
 
-			return queryResult;
+			return results;
 		}
 
 		IEnumerable<VM> ExecuteSpatialQuery(IEnumerable<VM> result)
@@ -246,85 +197,85 @@ namespace SHARP.Core
 
 		IEnumerable<VM> ExecuteChildrenQuery(IEnumerable<VM> result)
 		{
-			return result.Where(vm =>
+			Transform reference = _spatialConstraints.ReferenceTransform;
+			if (reference == null) return new List<VM>();
+
+			// Get direct children only
+			List<Transform> children = new();
+			for (int i = 0; i < reference.childCount; i++)
 			{
-				var reference = _spatialConstraints.ReferenceTransform;
-				var depthLimit = _spatialConstraints.DepthLimit;
-				var withinDepth = _spatialConstraints.WithinDepth;
+				children.Add(reference.GetChild(i));
+			}
 
-				if (reference == null) return false;
-
-				var candidateTransforms = GetTransformsAtDepth(reference, depthLimit, withinDepth);
-				return candidateTransforms.Any(t => DoesTransformBelongToViewModel(t, vm));
-			});
+			return FilterByTransforms(result, children);
 		}
 
 		IEnumerable<VM> ExecuteDescendantsQuery(IEnumerable<VM> result)
 		{
-			return result.Where(vm =>
-			{
-				var reference = _spatialConstraints.ReferenceTransform;
-				var depthLimit = _spatialConstraints.DepthLimit;
+			Transform reference = _spatialConstraints.ReferenceTransform;
+			int? depthLimit = _spatialConstraints.DepthLimit;
+			bool withinDepth = _spatialConstraints.WithinDepth;
 
-				if (reference == null) return false;
+			if (reference == null) return new List<VM>();
 
-				var candidateTransforms = GetTransformsAtDepth(reference, depthLimit, true); // true = withinDepth for descendants
-				return candidateTransforms.Any(t => DoesTransformBelongToViewModel(t, vm));
-			});
+			IEnumerable<Transform> candidateTransforms = GetTransformsAtDepth(reference, depthLimit, withinDepth);
+			return FilterByTransforms(result, candidateTransforms);
 		}
 
 		IEnumerable<VM> ExecuteSiblingsQuery(IEnumerable<VM> result)
 		{
-			return result.Where(vm =>
+			Transform reference = _spatialConstraints.ReferenceTransform;
+
+			if (reference == null || reference.parent == null) return new List<VM>();
+
+			List<Transform> siblings = new();
+			for (int i = 0; i < reference.parent.childCount; i++)
 			{
-				var reference = _spatialConstraints.ReferenceTransform;
-
-				if (reference == null || reference.parent == null) return false;
-
-				// Get all children of the parent (siblings)
-				var siblings = new List<Transform>();
-				for (int i = 0; i < reference.parent.childCount; i++)
+				Transform child = reference.parent.GetChild(i);
+				if (child != reference) // Exclude the reference itself
 				{
-					var child = reference.parent.GetChild(i);
-					if (child != reference) // Exclude the reference itself
-					{
-						siblings.Add(child);
-					}
+					siblings.Add(child);
 				}
+			}
 
-				return siblings.Any(sibling => DoesTransformBelongToViewModel(sibling, vm));
-			});
+			return FilterByTransforms(result, siblings);
 		}
 
 		IEnumerable<VM> ExecuteSiblingsAndSelfQuery(IEnumerable<VM> result)
 		{
-			return result.Where(vm =>
+			Transform reference = _spatialConstraints.ReferenceTransform;
+
+			if (reference == null || reference.parent == null) return new List<VM>();
+
+			// Get all children of the parent (siblings including self)
+			List<Transform> siblingsAndSelf = new();
+			for (int i = 0; i < reference.parent.childCount; i++)
 			{
-				var reference = _spatialConstraints.ReferenceTransform;
+				siblingsAndSelf.Add(reference.parent.GetChild(i));
+			}
 
-				if (reference == null || reference.parent == null) return false;
-
-				// Get all children of the parent (siblings including self)
-				var siblingsAndSelf = new List<Transform>();
-				for (int i = 0; i < reference.parent.childCount; i++)
-				{
-					siblingsAndSelf.Add(reference.parent.GetChild(i));
-				}
-
-				return siblingsAndSelf.Any(sibling => DoesTransformBelongToViewModel(sibling, vm));
-			});
+			return FilterByTransforms(result, siblingsAndSelf);
 		}
 
 		IEnumerable<VM> ExecutePredicateQuery(IEnumerable<VM> result)
 		{
-			IEnumerable<VM> queryResult = result;
+			if (_predicates.Count == 0) return result;
 
-			if (_predicateConstraints.Any())
+			List<VM> filtered = new();
+			foreach (var vm in result)
 			{
-				queryResult = queryResult.Where(vm => _predicateConstraints.All(c => c.Predicate(vm)));
+				bool passesAll = true;
+				for (int i = 0; i < _predicates.Count; i++)
+				{
+					if (!_predicates[i](vm))
+					{
+						passesAll = false;
+						break;
+					}
+				}
+				if (passesAll) filtered.Add(vm);
 			}
-
-			return queryResult;
+			return filtered;
 		}
 
 		public IEnumerable<VM> All()
@@ -348,15 +299,51 @@ namespace SHARP.Core
 			return ExecuteQuery().Count();
 		}
 
+		public DiscoveryQuery<VM> Clone()
+		{
+			return new DiscoveryQuery<VM>(_coordinator)
+			{
+				_coordinatorConstraints = _coordinatorConstraints?.Clone(),
+				_spatialConstraints = _spatialConstraints?.Clone(),
+				_predicates = new List<Func<VM, bool>>(_predicates)
+			};
+		}
+
 		#endregion
 
 		#region Spatial Helpers
 
-		bool DoesTransformBelongToViewModel(Transform transform, VM viewModel)
+		bool TryGetViewModelFromTransform(Transform transform, out VM viewModel)
 		{
-			if (!transform.TryGetComponent<IView<VM>>(out var view)) return false;
+			if (transform.TryGetComponent<IView<VM>>(out var view))
+			{
+				viewModel = view.ViewModel.CurrentValue;
+				return true;
+			}
+			viewModel = default;
+			return false;
+		}
 
-			return EqualityComparer<VM>.Default.Equals(view.ViewModel.CurrentValue, viewModel);
+		IEnumerable<VM> FilterByTransforms(IEnumerable<VM> candidates, IEnumerable<Transform> transforms)
+		{
+			HashSet<VM> matchingVMs = new();
+			foreach (var transform in transforms)
+			{
+				if (TryGetViewModelFromTransform(transform, out var foundVM))
+				{
+					matchingVMs.Add(foundVM);
+				}
+			}
+
+			List<VM> filtered = new();
+			foreach (var vm in candidates)
+			{
+				if (matchingVMs.Contains(vm))
+				{
+					filtered.Add(vm);
+				}
+			}
+			return filtered;
 		}
 
 		IEnumerable<Transform> GetTransformsAtDepth(Transform reference, int? depthLimit, bool withinDepth)
@@ -366,14 +353,14 @@ namespace SHARP.Core
 				return GetAllDescendants(reference);
 			}
 
-			var results = new List<Transform>();
+			List<Transform> results = new();
 			CollectTransformsAtDepth(reference, 0, depthLimit.Value, withinDepth, results);
 			return results;
 		}
 
 		IEnumerable<Transform> GetAllDescendants(Transform parent)
 		{
-			var descendants = new List<Transform>();
+			List<Transform> descendants = new();
 			CollectAllDescendants(parent, descendants);
 			return descendants;
 		}
@@ -382,7 +369,7 @@ namespace SHARP.Core
 		{
 			for (int i = 0; i < current.childCount; i++)
 			{
-				var child = current.GetChild(i);
+				Transform child = current.GetChild(i);
 				results.Add(child);
 
 				// Recursively collect grandchildren, etc.
@@ -396,9 +383,10 @@ namespace SHARP.Core
 
 			for (int i = 0; i < current.childCount; i++)
 			{
-				var child = current.GetChild(i);
+				Transform child = current.GetChild(i);
 				int childDepth = currentDepth + 1;
 
+				// Add everything under targetDepth when withinDepth is true if not, add only at targetDepth
 				if (withinDepth ? childDepth <= targetDepth : childDepth == targetDepth)
 				{
 					results.Add(child);

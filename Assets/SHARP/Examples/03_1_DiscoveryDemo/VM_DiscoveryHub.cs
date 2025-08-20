@@ -126,7 +126,7 @@ namespace SHARP.Examples.DiscoveryDemo
 
 					var whatever = _discovery.For<VM_SimpleCounter>()
 						.WithoutContext()
-						.ChildrenOf(reference, 2, true)
+						.DescendantsOf(reference, 2, true)
 						.Where(vm => vm.Count.Value > 1)
 						.All();
 

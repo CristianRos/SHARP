@@ -55,14 +55,14 @@ namespace SHARP.Core
 		/// <param name="reference">The parent transform to search within</param>
 		/// <param name="depth">Optional: Only include children at exactly this depth (relative to reference)</param>
 		/// <param name="withinDepth">If true, include all children within the specified depth; if false, only exact depth</param>
-		IDiscoveryQuery<VM> ChildrenOf(Transform reference, int? depth = null, bool withinDepth = true);
+		IDiscoveryQuery<VM> ChildrenOf(Transform reference);
 
 		/// <summary>
 		/// Filter to ViewModels whose associated Views are descendants (children, grandchildren, etc.) of the reference transform.
 		/// </summary>
 		/// <param name="reference">The ancestor transform to search within</param>
 		/// <param name="maxDepth">Optional: Maximum depth to search (prevents full tree traversal)</param>
-		IDiscoveryQuery<VM> DescendantsOf(Transform reference, int? maxDepth = null);
+		IDiscoveryQuery<VM> DescendantsOf(Transform reference, int? maxDepth = null, bool WithinDepth = true);
 
 		/// <summary>
 		/// Filter to ViewModels whose associated Views are siblings of the reference transform.

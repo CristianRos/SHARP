@@ -10,37 +10,60 @@ namespace SHARP.Core
 		public int? DepthLimit { get; private set; }
 		public bool WithinDepth { get; private set; }
 
-		public static SpatialConstraint<VM> ChildrenOf(Transform reference, int? depthLimit = null, bool withinDepth = true) =>
-			new()
-			{
-				ReferenceTransform = reference,
-				RelationType = SpatialRelationType.Children,
-				DepthLimit = depthLimit,
-				WithinDepth = withinDepth
-			};
+		public SpatialConstraint()
+		{
+			ReferenceTransform = null;
+			RelationType = SpatialRelationType.None;
+			DepthLimit = null;
+			WithinDepth = false;
+		}
 
-		public static SpatialConstraint<VM> DescendantsOf(Transform reference, int? depthLimit = null) =>
-			new()
-			{
-				ReferenceTransform = reference,
-				RelationType = SpatialRelationType.Descendants,
-				DepthLimit = depthLimit
-			};
+		SpatialConstraint(
+			Transform reference,
+			SpatialRelationType relationType,
+			int? depthLimit,
+			bool withinDepth)
+		{
+			ReferenceTransform = reference;
+			RelationType = relationType;
+			DepthLimit = depthLimit;
+			WithinDepth = withinDepth;
+		}
 
-		public static SpatialConstraint<VM> SiblingsOf(Transform reference) =>
-			new()
-			{
-				ReferenceTransform = reference,
-				RelationType = SpatialRelationType.Siblings
-			};
+		public void ChildrenOf(Transform reference)
+		{
+			ReferenceTransform = reference;
+			RelationType = SpatialRelationType.Children;
+		}
 
-		public static SpatialConstraint<VM> SiblingsOfIncludingSelf(Transform reference) =>
-			new()
-			{
-				ReferenceTransform = reference,
-				RelationType = SpatialRelationType.SiblingsAndSelf
-			};
+		public void DescendantsOf(Transform reference, int? depthLimit = null, bool withinDepth = true)
+		{
+			ReferenceTransform = reference;
+			RelationType = SpatialRelationType.Descendants;
+			DepthLimit = depthLimit;
+			WithinDepth = withinDepth;
+		}
+
+		public void SiblingsOf(Transform reference)
+		{
+			ReferenceTransform = reference;
+			RelationType = SpatialRelationType.Siblings;
+		}
+
+		public void SiblingsOfIncludingSelf(Transform reference)
+		{
+			ReferenceTransform = reference;
+			RelationType = SpatialRelationType.SiblingsAndSelf;
+		}
+
+		public SpatialConstraint<VM> Clone() =>
+			new(
+				ReferenceTransform,
+				RelationType,
+				DepthLimit,
+				WithinDepth
+			);
 	}
 
-	public enum SpatialRelationType { Children, Descendants, Siblings, SiblingsAndSelf }
+	public enum SpatialRelationType { Children, Descendants, Siblings, SiblingsAndSelf, None }
 }

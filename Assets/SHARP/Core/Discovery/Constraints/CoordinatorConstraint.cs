@@ -11,45 +11,67 @@ namespace SHARP.Core
 		public CoordinatorContextType ContextType { get; private set; }
 		public CoordinatorStateType StateType { get; private set; }
 
-		public static CoordinatorConstraint<VM> ForContext(string contextName) =>
-			new()
-			{
-				ContextName = contextName,
-				ContextType = CoordinatorContextType.ContextName
-			};
+		public CoordinatorConstraint()
+		{
+			ContextName = null;
+			ContextMatcher = null;
+			ContextType = CoordinatorContextType.None;
+			StateType = CoordinatorStateType.None;
+		}
 
-		public static CoordinatorConstraint<VM> WithContextMatcher(Func<string, bool> matcher) =>
-			new()
-			{
-				ContextMatcher = matcher,
-				ContextType = CoordinatorContextType.ContextMatcher
-			};
+		CoordinatorConstraint(
+			string contextName,
+			Func<string, bool> contextMatcher,
+			CoordinatorContextType contextType,
+			CoordinatorStateType stateType)
+		{
+			ContextName = contextName;
+			ContextMatcher = contextMatcher;
+			ContextType = contextType;
+			StateType = stateType;
+		}
 
-		public static CoordinatorConstraint<VM> ThatRequiresAnyContext() =>
-			new()
-			{
-				ContextType = CoordinatorContextType.WithAnyContext
-			};
+		public void ForContext(string contextName)
+		{
+			ContextName = contextName;
+			ContextType = CoordinatorContextType.ContextName;
+		}
 
-		public static CoordinatorConstraint<VM> ThatExcludesContext() =>
-			new()
-			{
-				ContextType = CoordinatorContextType.WithoutContext
-			};
+		public void WithContextMatcher(Func<string, bool> matcher)
+		{
+			ContextMatcher = matcher;
+			ContextType = CoordinatorContextType.ContextMatcher;
+		}
 
-		public static CoordinatorConstraint<VM> ThatAreActive() =>
-			new()
-			{
-				StateType = CoordinatorStateType.Active
-			};
+		public void ThatRequiresAnyContext()
+		{
+			ContextType = CoordinatorContextType.WithAnyContext;
+		}
 
-		public static CoordinatorConstraint<VM> ThatAreOrphaned() =>
-			new()
-			{
-				StateType = CoordinatorStateType.Orphaned
-			};
+		public void ThatExcludesContext()
+		{
+			ContextType = CoordinatorContextType.WithoutContext;
+		}
+
+		public void ThatAreActive()
+		{
+			StateType = CoordinatorStateType.Active;
+		}
+
+		public void ThatAreOrphaned()
+		{
+			StateType = CoordinatorStateType.Orphaned;
+		}
+
+		public CoordinatorConstraint<VM> Clone() =>
+			new(
+				ContextName,
+				ContextMatcher,
+				ContextType,
+				StateType
+			);
 	}
 
-	public enum CoordinatorContextType { ContextName, ContextMatcher, WithAnyContext, WithoutContext }
-	public enum CoordinatorStateType { Active, Orphaned }
+	public enum CoordinatorContextType { ContextName, ContextMatcher, WithAnyContext, WithoutContext, None }
+	public enum CoordinatorStateType { Active, Orphaned, None }
 }
