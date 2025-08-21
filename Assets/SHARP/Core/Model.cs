@@ -3,15 +3,25 @@ using R3;
 
 namespace SHARP.Core
 {
-	public interface IModel : IDisposable { }
+	public interface IModel : IDisposable
+	{
+		Subject<Unit> OnDispose { get; }
+	}
 
 	public class Model : IModel
 	{
-		IDisposable _disposable = Disposable.Empty;
+		readonly IDisposable _disposable = Disposable.Empty;
+
+		bool _isDisposed = false;
+		public Subject<Unit> OnDispose { get; } = new();
 
 		public void Dispose()
 		{
+			if (_isDisposed) return;
+			_isDisposed = true;
+
 			_disposable.Dispose();
+			OnDispose.OnNext(Unit.Default);
 		}
 	}
 }

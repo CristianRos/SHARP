@@ -14,6 +14,11 @@ namespace SHARP.Core
 	{
 		ReactiveProperty<VM> ViewModel { get; }
 		string Context { get; set; }
+
+		Subject<Unit> OnSubscribed { get; }
+		Subject<string> OnContextChanged { get; }
+		Subject<VM> OnViewModelRebound { get; }
+		Subject<Unit> OnDisposed { get; }
 	}
 
 	public abstract class View<VM> : MonoBehaviour, IView<VM>
@@ -26,10 +31,28 @@ namespace SHARP.Core
 		protected ISharpDiscovery _discovery;
 
 		[SerializeField] string _context;
-		public string Context { get => _context; set { _context = value; } }
+		public string Context
+		{
+			get => _context;
+			set
+			{
+				_context = value;
+				OnContextChanged.OnNext(value);
+			}
+		}
 
 		IDisposable _disposable = Disposable.Empty;
 		bool _disposed = false;
+
+		#endregion
+
+		#region Subjects
+
+		public Subject<Unit> OnSubscribed { get; } = new();
+
+		public Subject<string> OnContextChanged { get; } = new();
+		public Subject<VM> OnViewModelRebound { get; } = new();
+		public Subject<Unit> OnDisposed { get; } = new();
 
 		#endregion
 
@@ -48,7 +71,11 @@ namespace SHARP.Core
 		protected virtual void OnEnable()
 		{
 			ViewModel
-				.Subscribe(_ => RefreshSubscriptions())
+				.Subscribe(vm =>
+				{
+					RefreshSubscriptions();
+					OnViewModelRebound.OnNext(vm);
+				})
 				.AddTo(this);
 		}
 
@@ -84,8 +111,9 @@ namespace SHARP.Core
 			var d = Disposable.CreateBuilder();
 
 			HandleSubscriptions(ViewModel.Value, ref d);
+			OnSubscribed.OnNext(Unit.Default);
 
-			return d.Build(); ;
+			return d.Build();
 		}
 
 		#endregion
@@ -144,6 +172,8 @@ namespace SHARP.Core
 
 			_disposable.Dispose();
 			_coordinator.For<VM>().UnregisterView(this, Context);
+
+			OnDisposed.OnNext(Unit.Default);
 		}
 
 		#endregion

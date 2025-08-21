@@ -4,7 +4,11 @@ using UnityEngine;
 
 namespace SHARP.Core
 {
-	public interface IViewModel : IDisposable { }
+	public interface IViewModel : IDisposable
+	{
+		Subject<Unit> OnSubscribed { get; }
+		Subject<Unit> OnDisposed { get; }
+	}
 
 	public abstract class ViewModel : IViewModel
 	{
@@ -12,6 +16,13 @@ namespace SHARP.Core
 
 		IDisposable _disposable = Disposable.Empty;
 		bool _disposed;
+
+		#endregion
+
+		#region Subjects
+
+		public Subject<Unit> OnSubscribed { get; } = new();
+		public Subject<Unit> OnDisposed { get; } = new();
 
 		#endregion
 
@@ -29,6 +40,7 @@ namespace SHARP.Core
 			var d = Disposable.CreateBuilder();
 
 			HandleSubscriptions(ref d);
+			OnSubscribed.OnNext(Unit.Default);
 
 			_disposable = d.Build();
 		}
@@ -49,6 +61,7 @@ namespace SHARP.Core
 			}
 
 			_disposable.Dispose();
+			OnDisposed.OnNext(Unit.Default);
 		}
 
 		#endregion
