@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Reflex.Core;
 using UnityEngine;
 
@@ -27,6 +29,7 @@ namespace SHARP.Core
 		readonly HashSet<string> _keepAliveContexts = new();
 
 
+		readonly ReaderWriterLockSlim _coordinatorLock = new();
 		public bool IsDisposed = false;
 
 		#endregion
@@ -36,144 +39,299 @@ namespace SHARP.Core
 
 		public IEnumerable<VM> GetActive()
 		{
-			foreach (var vm in _active_ViewModels)
-				yield return vm;
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _active_ViewModels.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
 		}
 		public IEnumerable<VM> GetOrphan()
 		{
-			foreach (var vm in _orphan_ViewModels)
-				yield return vm;
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _orphan_ViewModels.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
 		}
 		public IEnumerable<VM> GetAll()
 		{
-			foreach (var vm in _active_ViewModels)
-				yield return vm;
-			foreach (var vm in _orphan_ViewModels)
-				yield return vm;
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _active_ViewModels.Concat(_orphan_ViewModels).ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
 		}
 
-		public IEnumerable<IView<VM>> GetViewsWithoutContext() => _views_WithoutContext;
+		public IEnumerable<IView<VM>> GetViewsWithoutContext()
+		{
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _views_WithoutContext.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
+		}
 		public IEnumerable<IView<VM>> GetViewsWithContext()
 		{
-			foreach (var set in _bi_contexts_setViews.ForwardValues)
+			_coordinatorLock.EnterReadLock();
+
+			try
 			{
-				foreach (var view in set)
-				{
-					yield return view;
-				}
+				return _bi_contexts_setViews.ForwardValues
+					.SelectMany(set => set)
+					.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
 			}
 		}
 
-		public IEnumerable<VM> GetViewModelsWithoutContext() => _viewModels_WithoutContext;
-		public IEnumerable<VM> GetViewModelsWithContext() => _bi_contexts_viewModels.Values;
-		public IEnumerable<VM> GetViewModelsWithContext(Func<string, bool> contextMatcher)
+		public IEnumerable<VM> GetViewModelsWithoutContext()
 		{
-			foreach (var (context, vm) in _bi_contexts_viewModels.Forward)
+			_coordinatorLock.EnterReadLock();
+			try
 			{
-				if (contextMatcher(context))
-				{
-					yield return vm;
-				}
+				return _viewModels_WithoutContext.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
 			}
 		}
-		public VM GetViewModel(string context) => _bi_contexts_viewModels.TryGetValue(context, out var vm) ? vm : default;
+		public IEnumerable<VM> GetViewModelsWithContext()
+		{
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _bi_contexts_viewModels.Values.ToArray();
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
+		}
+		public IEnumerable<VM> GetViewModelsWithContext(Func<string, bool> contextMatcher)
+		{
+			_coordinatorLock.EnterReadLock();
+
+			try
+			{
+				List<VM> viewModels = new();
+				foreach (var (context, vm) in _bi_contexts_viewModels.Forward)
+				{
+					if (contextMatcher(context))
+					{
+						viewModels.Add(vm);
+					}
+				}
+
+				return viewModels;
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
+		}
+		public VM GetViewModel(string context)
+		{
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _bi_contexts_viewModels.TryGetValue(context, out var vm) ? vm : default;
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
+		}
 
 		public string GetContext(IView<VM> view)
 		{
-			if (_bi_contexts_setViews.TryGetKey(view, out var ctx))
-			{
-				return ctx;
-			}
+			_coordinatorLock.EnterReadLock();
 
-			return null;
+			try
+			{
+				if (_bi_contexts_setViews.TryGetKey(view, out var ctx))
+				{
+					return ctx;
+				}
+				return null;
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
 		}
 		public string GetContext(VM viewModel)
 		{
-			if (_bi_contexts_viewModels.TryGetKey(viewModel, out var ctx))
+			_coordinatorLock.EnterReadLock();
+			try
 			{
-				return ctx;
+				if (_bi_contexts_viewModels.TryGetKey(viewModel, out var ctx))
+				{
+					return ctx;
+				}
+				return null;
 			}
-
-			return null;
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
 		}
-		public IEnumerable<string> GetAllContexts() => _bi_contexts_viewModels.Keys;
+		public IEnumerable<string> GetAllContexts()
+		{
+			_coordinatorLock.EnterReadLock();
+			try
+			{
+				return _bi_contexts_viewModels.Keys.ToArray();
+
+			}
+			finally
+			{
+				_coordinatorLock.ExitReadLock();
+			}
+		}
 
 		public VM Get(IView<VM> view, string withContext, Container withContainer)
 		{
-			// Return a new instance of a ViewModel if there is no context
-			if (string.IsNullOrEmpty(withContext))
-			{
-				Debug.Log($"Getting a new instance of {typeof(VM)}");
-				return CreateViewModelWithoutContext(view, withContainer);
-			}
+			_coordinatorLock.EnterWriteLock();
 
-			// Return the ViewModel with the context if it exists
-			if (_bi_contexts_viewModels.TryGetValue(withContext, out var vm))
+			try
 			{
-				Debug.Log($"Getting {typeof(VM)} with context {withContext}");
-				AddViewToContext(view, withContext);
-				return vm;
-			}
+				// Return a new instance of a ViewModel if there is no context
+				if (string.IsNullOrEmpty(withContext))
+				{
+					Debug.Log($"Getting a new instance of {typeof(VM)}");
+					return CreateViewModelWithoutContext(view, withContainer);
+				}
 
-			// Return a new instance of a ViewModel with the specified context
-			Debug.Log($"Getting a new instance of {typeof(VM)} with context {withContext}");
-			return CreateViewModelWithContext(view, withContext, withContainer);
+				// Return the ViewModel with the context if it exists
+				if (_bi_contexts_viewModels.TryGetValue(withContext, out var vm))
+				{
+					Debug.Log($"Getting {typeof(VM)} with context {withContext}");
+					AddViewToContext(view, withContext);
+					return vm;
+				}
+
+				// Return a new instance of a ViewModel with the specified context
+				Debug.Log($"Getting a new instance of {typeof(VM)} with context {withContext}");
+				return CreateViewModelWithContext(view, withContext, withContainer);
+			}
+			finally
+			{
+				_coordinatorLock.ExitWriteLock();
+			}
 		}
 
 		// Handles if the view should be rebound to a new context or an existing context
 		public virtual VM CoordinateRebind<V>(V view, VM toVM, Container withContainer)
 			where V : IView<VM>
 		{
-			var fromContext = view.Context;
+			_coordinatorLock.EnterWriteLock();
 
-			if (_bi_contexts_viewModels.TryGetKey(toVM, out var toContext))
+			try
 			{
-				return RebindToContext(view, fromContext, toContext, withContainer);
-			}
 
-			return ConvertToContextualViewModel(view, toVM, fromContext, withContainer);
+				var fromContext = view.Context;
+
+				if (_bi_contexts_viewModels.TryGetKey(toVM, out var toContext))
+				{
+					return RebindToContext(view, fromContext, toContext, withContainer);
+				}
+
+				return ConvertToContextualViewModel(view, toVM, fromContext, withContainer);
+			}
+			finally
+			{
+				_coordinatorLock.ExitWriteLock();
+			}
 		}
 
 		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, Container withContainer)
 		{
-			var currentViewModel = view.ViewModel.CurrentValue;
+			_coordinatorLock.EnterWriteLock();
 
-			if (string.IsNullOrEmpty(fromContext))
+			try
 			{
-				OrphanViewModel(currentViewModel);
+
+				var currentViewModel = view.ViewModel.CurrentValue;
+
+				if (string.IsNullOrEmpty(fromContext))
+				{
+					OrphanViewModel(currentViewModel);
+					return Get(view, toContext, withContainer);
+				}
+
+				if (fromContext == toContext)
+				{
+					Debug.LogWarning($"Trying to rebind to the same context {toContext} for {view.GetType()}, returning current view model");
+					return view.ViewModel.CurrentValue;
+				}
+
+				UnregisterView(view, fromContext);
 				return Get(view, toContext, withContainer);
 			}
-
-			if (fromContext == toContext)
+			finally
 			{
-				Debug.LogWarning($"Trying to rebind to the same context {toContext} for {view.GetType()}, returning current view model");
-				return view.ViewModel.CurrentValue;
+				_coordinatorLock.ExitWriteLock();
 			}
-
-			UnregisterView(view, fromContext);
-			return Get(view, toContext, withContainer);
 		}
 
 		public void UnregisterView(IView<VM> view, string context)
 		{
-			if (IsDisposed) return;
+			_coordinatorLock.EnterWriteLock();
 
-			UnregisterFromContextTracking(view, context);
-			UnregisterFromWithoutContextTracking(view);
+			try
+			{
+				if (IsDisposed) return;
+
+				UnregisterFromContextTracking(view, context);
+				UnregisterFromWithoutContextTracking(view);
+			}
+			finally
+			{
+				_coordinatorLock.ExitWriteLock();
+			}
 		}
 
 		public virtual void Dispose()
 		{
-			if (IsDisposed)
+			_coordinatorLock.EnterWriteLock();
+
+			try
 			{
-				Debug.LogWarning($"Tried to dispose the coordinator twice, ignoring this call");
-				return;
+
+				if (IsDisposed)
+				{
+					Debug.LogWarning($"Tried to dispose the coordinator twice, ignoring this call");
+					return;
+				}
+
+				Debug.Log($"Disposing Coordinator<{typeof(VM)}>");
+				IsDisposed = true;
+
+				ClearAllTrackingData();
 			}
-
-			Debug.Log($"Disposing Coordinator<{typeof(VM)}>");
-			IsDisposed = true;
-
-			ClearAllTrackingData();
+			finally
+			{
+				_coordinatorLock.ExitWriteLock();
+			}
 		}
 
 		#endregion

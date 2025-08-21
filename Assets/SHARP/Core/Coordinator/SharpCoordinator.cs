@@ -42,14 +42,4 @@ namespace SHARP.Core
 			Coordinators.Clear();
 		}
 	}
-
-	internal class CoreSharpCoordinator : IDisposable
-	{
-		private readonly Dictionary<Type, object> _coordinators = new();
-
-		public void Dispose()
-		{
-			throw new NotImplementedException();
-		}
-	}
 }

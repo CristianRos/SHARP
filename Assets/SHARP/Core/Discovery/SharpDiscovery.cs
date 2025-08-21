@@ -2,7 +2,7 @@ namespace SHARP.Core
 {
 	public class SharpDiscovery : ISharpDiscovery
 	{
-		ISharpCoordinator _sharpCoordinator;
+		readonly ISharpCoordinator _sharpCoordinator;
 
 		public SharpDiscovery(ISharpCoordinator sharpCoordinator)
 		{
@@ -12,7 +12,8 @@ namespace SHARP.Core
 		public IDiscoveryQuery<VM> For<VM>()
 			where VM : IViewModel
 		{
-			return new DiscoveryQuery<VM>(_sharpCoordinator.For<VM>());
+			ICoordinator<VM> coordinator = _sharpCoordinator.For<VM>();
+			return new DiscoveryQuery<VM>(coordinator);
 		}
 	}
 }

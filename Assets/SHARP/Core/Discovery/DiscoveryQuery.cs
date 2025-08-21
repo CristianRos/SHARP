@@ -395,7 +395,6 @@ namespace SHARP.Core
 			}
 		}
 
-
 		#endregion
 	}
 }
