@@ -15,6 +15,10 @@ namespace SHARP.Core
 		ReactiveProperty<VM> ViewModel { get; }
 		string Context { get; set; }
 
+		void RebindToContext(string toContext);
+		void Rebind(VM viewModel);
+		void UnsafeRebind(VM viewModel);
+
 		Subject<Unit> OnSubscribed { get; }
 		Subject<string> OnContextChanged { get; }
 		Subject<VM> OnViewModelRebound { get; }
@@ -61,7 +65,7 @@ namespace SHARP.Core
 
 		protected virtual void Awake()
 		{
-			var sceneContainer = gameObject.scene.GetSceneContainer();
+			IContainer sceneContainer = new ContainerWrapper(gameObject.scene.GetSceneContainer());
 			_coordinator = sceneContainer.Resolve<ISharpCoordinator>();
 			_discovery = sceneContainer.Resolve<ISharpDiscovery>();
 
@@ -121,32 +125,32 @@ namespace SHARP.Core
 
 		#region Rebind
 
-		protected virtual void RebindToContext(string toContext)
+		public virtual void RebindToContext(string toContext)
 		{
 			if (string.IsNullOrEmpty(toContext))
 			{
 				throw new ArgumentException("Context cannot be empty");
 			}
 
-			var sceneContainer = gameObject.scene.GetSceneContainer();
+			IContainer sceneContainer = new ContainerWrapper(gameObject.scene.GetSceneContainer());
 
 			ViewModel.Value = _coordinator.For<VM>()
 				.RebindToContext(this, Context, toContext, sceneContainer);
 		}
 
-		protected virtual void Rebind(VM viewModel)
+		public virtual void Rebind(VM viewModel)
 		{
 			if (viewModel == null)
 			{
 				throw new ArgumentNullException(nameof(viewModel));
 			}
 
-			var sceneContainer = gameObject.scene.GetSceneContainer();
+			IContainer sceneContainer = new ContainerWrapper(gameObject.scene.GetSceneContainer());
 
 			ViewModel.Value = _coordinator.For<VM>().CoordinateRebind(this, viewModel, sceneContainer);
 		}
 
-		protected virtual void UnsafeRebind(VM viewModel)
+		public virtual void UnsafeRebind(VM viewModel)
 		{
 			if (viewModel == null)
 			{

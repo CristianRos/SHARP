@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Reflex.Core;
 using UnityEngine;
 
 namespace SHARP.Core
@@ -29,7 +28,7 @@ namespace SHARP.Core
 		readonly HashSet<string> _keepAliveContexts = new();
 
 
-		readonly ReaderWriterLockSlim _coordinatorLock = new();
+		readonly ReaderWriterLockSlim _coordinatorLock = new(LockRecursionPolicy.SupportsRecursion);
 		public bool IsDisposed = false;
 
 		#endregion
@@ -208,7 +207,7 @@ namespace SHARP.Core
 			}
 		}
 
-		public VM Get(IView<VM> view, string withContext, Container withContainer)
+		public VM Get(IView<VM> view, string withContext, IContainer withContainer)
 		{
 			_coordinatorLock.EnterWriteLock();
 
@@ -240,7 +239,7 @@ namespace SHARP.Core
 		}
 
 		// Handles if the view should be rebound to a new context or an existing context
-		public virtual VM CoordinateRebind<V>(V view, VM toVM, Container withContainer)
+		public virtual VM CoordinateRebind<V>(V view, VM toVM, IContainer withContainer)
 			where V : IView<VM>
 		{
 			_coordinatorLock.EnterWriteLock();
@@ -263,7 +262,7 @@ namespace SHARP.Core
 			}
 		}
 
-		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, Container withContainer)
+		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, IContainer withContainer)
 		{
 			_coordinatorLock.EnterWriteLock();
 
@@ -339,7 +338,7 @@ namespace SHARP.Core
 
 		#region ViewModel Creation Methods
 
-		VM CreateViewModelWithoutContext(IView<VM> view, Container withContainer)
+		VM CreateViewModelWithoutContext(IView<VM> view, IContainer withContainer)
 		{
 			var viewModel = withContainer.Resolve<VM>();
 			_active_ViewModels.Add(viewModel);
@@ -351,7 +350,7 @@ namespace SHARP.Core
 			return viewModel;
 		}
 
-		VM CreateViewModelWithContext(IView<VM> view, string withContext, Container withContainer)
+		VM CreateViewModelWithContext(IView<VM> view, string withContext, IContainer withContainer)
 		{
 			var contextViewModel = withContainer.Resolve<VM>();
 
@@ -362,7 +361,7 @@ namespace SHARP.Core
 			return contextViewModel;
 		}
 
-		VM ConvertToContextualViewModel(IView<VM> view, VM toVM, string fromContext, Container withContainer)
+		VM ConvertToContextualViewModel(IView<VM> view, VM toVM, string fromContext, IContainer withContainer)
 		{
 			if (!_bi_views_viewModels_WithoutContext.TryGetKey(toVM, out var targetView))
 			{
