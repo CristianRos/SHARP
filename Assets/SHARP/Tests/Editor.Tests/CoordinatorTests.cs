@@ -41,6 +41,7 @@ public class CoordinatorTests
     public void Setup()
     {
         _container = Substitute.For<IContainer>();
+        _coordinator = new();
 
         _viewModel1 = new TestViewModel();
         _viewModel2 = new TestViewModel();
@@ -81,7 +82,6 @@ public class CoordinatorTests
     public void ViewCreation_WithoutContext_CreatesUniqueViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         // Act
         _view1.InitView(_coordinator, _container);
@@ -100,7 +100,6 @@ public class CoordinatorTests
     public void ViewCreation_WithSameContext_ReusesViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext = SHARED_CONTEXT;
         _view1.Context = testContext;
@@ -124,7 +123,6 @@ public class CoordinatorTests
     public void ViewCreation_WithDifferentContexts_CreatesUniqueViewModels()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext1 = CONTEXT_1;
         const string testContext2 = CONTEXT_2;
@@ -156,7 +154,6 @@ public class CoordinatorTests
     public void ContextSwitching_FromWithoutContextToContext_MovesViewModelCorrectly()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext = DEFAULT_CONTEXT;
 
@@ -165,7 +162,7 @@ public class CoordinatorTests
         _view2.InitView(_coordinator, _container);
 
         // Act
-        _view2.ViewModel.Value = _coordinator.RebindToContext(_view2, null, testContext, _container);
+        _coordinator.RebindToContext(_view2, null, testContext, _container);
 
         // Assert
         _coordinator.AssertContextExists(testContext);
@@ -187,7 +184,6 @@ public class CoordinatorTests
     public void ContextSwitching_FromContextToContext_OrphansOldViewModelAndReusesNew()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext1 = CONTEXT_1;
         const string testContext2 = CONTEXT_2;
@@ -198,7 +194,7 @@ public class CoordinatorTests
         _view2.InitView(_coordinator, _container);
 
         // Act
-        _view2.ViewModel.Value = _coordinator.RebindToContext(_view2, _view2.Context, testContext1, _container);
+        _coordinator.RebindToContext(_view2, _view2.Context, testContext1, _container);
 
         // Assert
         _coordinator.AssertContextEmpty(testContext2);
@@ -222,7 +218,6 @@ public class CoordinatorTests
     public void ContextSwitching_ToSameContext_ReturnsCurrentViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext = DEFAULT_CONTEXT;
 
@@ -230,7 +225,7 @@ public class CoordinatorTests
         _view1.InitView(_coordinator, _container);
 
         // Act
-        _view1.ViewModel.Value = _coordinator.RebindToContext(_view1, _view1.Context, testContext, _container);
+        _coordinator.RebindToContext(_view1, _view1.Context, testContext, _container);
 
         // Assert
         _coordinator.AssertContextExists(testContext);
@@ -248,7 +243,6 @@ public class CoordinatorTests
     public void GetViewModelsWithContext_WithMatcher_ReturnsFilteredResults()
     {
         // Arrange
-        _coordinator = new();
 
         _view1.Context = CONTEXT_1;
         _view2.Context = CONTEXT_2;
@@ -280,7 +274,6 @@ public class CoordinatorTests
     public void SharedContext_LastViewUnregistered_OrphansViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext = DEFAULT_CONTEXT;
 
@@ -305,7 +298,6 @@ public class CoordinatorTests
     public void SharedContext_NotLastViewUnregistered_DoesNotOrphanViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext = DEFAULT_CONTEXT;
 
@@ -335,7 +327,6 @@ public class CoordinatorTests
     public void UnregisterView_WithoutContext_OrphansViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         _view1.InitView(_coordinator, _container);
 
@@ -358,10 +349,9 @@ public class CoordinatorTests
     #region CoordinateRebind
 
     [Test]
-    public void CoordinateRebind_ToExistingContextualViewModel_ReusesViewModel()
+    public void CoordinateRebind_ToViewModelWithContext_ReusesExistingViewModel()
     {
         // Arrange
-        _coordinator = new();
 
         const string existingContext = EXISTING_CONTEXT;
 
@@ -370,7 +360,7 @@ public class CoordinatorTests
         _view2.InitView(_coordinator, _container);
 
         // Act
-        _view2.ViewModel.Value = _coordinator.CoordinateRebind(_view2, _view1.ViewModel.Value, _container);
+        _coordinator.CoordinateRebind(_view2, _view1.ViewModel.Value, _container);
         _view1.ViewModel.Value.IncrementCommand.Execute(Unit.Default);
 
         // Assert
@@ -390,13 +380,12 @@ public class CoordinatorTests
     public void CoordinateRebind_ToWithoutContextViewModel_CreatesTransientContext()
     {
         // Arrange
-        _coordinator = new();
 
         _view1.InitView(_coordinator, _container);
         _view2.InitView(_coordinator, _container);
 
         // Act
-        _view2.ViewModel.Value = _coordinator.CoordinateRebind(_view2, _view1.ViewModel.Value, _container);
+        _coordinator.CoordinateRebind(_view2, _view1.ViewModel.Value, _container);
 
         // Assert
         var allContexts = _coordinator.GetAllContexts().ToHashSet();
@@ -421,7 +410,6 @@ public class CoordinatorTests
     public void ContainerResolve_ThrowsException_DoesNotCorruptState()
     {
         // Arrange
-        _coordinator = new();
 
         _container.Resolve<ITestViewModel>().Returns(x => throw new InvalidOperationException("Container failed"));
 
@@ -436,7 +424,6 @@ public class CoordinatorTests
     public void ViewAlreadyInContext_ThrowsInvalidOperationException()
     {
         // Arrange
-        _coordinator = new();
 
         _view1.Context = DEFAULT_CONTEXT;
         _view1.InitView(_coordinator, _container);
@@ -453,10 +440,9 @@ public class CoordinatorTests
     #region Complex
 
     [Test]
-    public void ComplexWorkflow_CreateSwitchUnregister_MaintainsStateConsistency()
+    public void MultipleContextSwitches_FollowedByUnregistration_MaintainsConsistentState()
     {
         // Arrange
-        _coordinator = new();
 
         const string testContext1 = CONTEXT_1;
         const string testContext2 = CONTEXT_2;
@@ -467,7 +453,7 @@ public class CoordinatorTests
         _view2.InitView(_coordinator, _container);
 
         // Act
-        _view2.ViewModel.Value = _coordinator.RebindToContext(_view2, _view2.Context, _view1.Context, _container);
+        _coordinator.RebindToContext(_view2, _view2.Context, _view1.Context, _container);
 
         _coordinator.UnregisterView(_view1, _view1.Context);
         _coordinator.UnregisterView(_view2, _view2.Context);
@@ -486,7 +472,6 @@ public class CoordinatorTests
     public void ConcurrentOperations_MultipleThreads_MaintainsThreadSafety()
     {
         // Arrange
-        _coordinator = new();
         const int threadCount = 10;
         const int operationsPerThread = 20;
 

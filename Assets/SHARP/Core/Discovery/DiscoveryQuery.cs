@@ -55,6 +55,13 @@ namespace SHARP.Core
 			return this;
 		}
 
+		public IDiscoveryQuery<VM> WithOrWithoutContext()
+		{
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.WithOrWithoutContext();
+			return this;
+		}
+
 		public IDiscoveryQuery<VM> ThatAreActive()
 		{
 			_coordinatorConstraints ??= new();
@@ -66,6 +73,13 @@ namespace SHARP.Core
 		{
 			_coordinatorConstraints ??= new();
 			_coordinatorConstraints.ThatAreOrphaned();
+			return this;
+		}
+
+		public IDiscoveryQuery<VM> ThatAreActiveOrOrphaned()
+		{
+			_coordinatorConstraints ??= new();
+			_coordinatorConstraints.ThatExist();
 			return this;
 		}
 
@@ -162,6 +176,10 @@ namespace SHARP.Core
 				case CoordinatorContextType.WithoutContext:
 					results.UnionWith(_coordinator.GetViewModelsWithoutContext());
 					break;
+				case CoordinatorContextType.All:
+					results.UnionWith(_coordinator.GetViewModelsWithContext());
+					results.UnionWith(_coordinator.GetViewModelsWithoutContext());
+					break;
 				default:
 					break;
 			}
@@ -173,6 +191,9 @@ namespace SHARP.Core
 					break;
 				case CoordinatorStateType.Orphaned:
 					results.IntersectWith(_coordinator.GetOrphan());
+					break;
+				case CoordinatorStateType.All:
+					results.UnionWith(_coordinator.GetAll());
 					break;
 				default:
 					break;

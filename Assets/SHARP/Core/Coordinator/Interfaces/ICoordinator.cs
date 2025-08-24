@@ -26,9 +26,9 @@ namespace SHARP.Core
 		IEnumerable<string> GetAllContexts();
 
 		VM Get(IView<VM> view, string withContext, IContainer withContainer);
-		VM CoordinateRebind<V>(V view, VM toVM, IContainer withContainer)
+		void CoordinateRebind<V>(V view, VM toVM, IContainer withContainer)
 			where V : IView<VM>;
-		VM RebindToContext(IView<VM> view, string fromContext, string toContext, IContainer withContainer);
+		void RebindToContext(IView<VM> view, string fromContext, string toContext, IContainer withContainer);
 		void UnregisterView(IView<VM> view, string context);
 	}
 }

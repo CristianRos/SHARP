@@ -134,7 +134,7 @@ namespace SHARP.Core
 
 			IContainer sceneContainer = new ContainerWrapper(gameObject.scene.GetSceneContainer());
 
-			ViewModel.Value = _coordinator.For<VM>()
+			_coordinator.For<VM>()
 				.RebindToContext(this, Context, toContext, sceneContainer);
 		}
 
@@ -147,7 +147,8 @@ namespace SHARP.Core
 
 			IContainer sceneContainer = new ContainerWrapper(gameObject.scene.GetSceneContainer());
 
-			ViewModel.Value = _coordinator.For<VM>().CoordinateRebind(this, viewModel, sceneContainer);
+			_coordinator.For<VM>()
+				.CoordinateRebind(this, viewModel, sceneContainer);
 		}
 
 		public virtual void UnsafeRebind(VM viewModel)

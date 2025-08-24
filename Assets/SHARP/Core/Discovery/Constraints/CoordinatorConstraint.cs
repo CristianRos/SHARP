@@ -15,7 +15,7 @@ namespace SHARP.Core
 		{
 			ContextName = null;
 			ContextMatcher = null;
-			ContextType = CoordinatorContextType.None;
+			ContextType = CoordinatorContextType.All;
 			StateType = CoordinatorStateType.None;
 		}
 
@@ -53,6 +53,11 @@ namespace SHARP.Core
 			ContextType = CoordinatorContextType.WithoutContext;
 		}
 
+		public void WithOrWithoutContext()
+		{
+			ContextType = CoordinatorContextType.All;
+		}
+
 		public void ThatAreActive()
 		{
 			StateType = CoordinatorStateType.Active;
@@ -61,6 +66,11 @@ namespace SHARP.Core
 		public void ThatAreOrphaned()
 		{
 			StateType = CoordinatorStateType.Orphaned;
+		}
+
+		public void ThatExist()
+		{
+			StateType = CoordinatorStateType.All;
 		}
 
 		public CoordinatorConstraint<VM> Clone() =>
@@ -72,6 +82,6 @@ namespace SHARP.Core
 			);
 	}
 
-	public enum CoordinatorContextType { ContextName, ContextMatcher, WithAnyContext, WithoutContext, None }
-	public enum CoordinatorStateType { Active, Orphaned, None }
+	public enum CoordinatorContextType { ContextName, ContextMatcher, WithAnyContext, WithoutContext, All }
+	public enum CoordinatorStateType { Active, Orphaned, All, None }
 }

@@ -239,7 +239,7 @@ namespace SHARP.Core
 		}
 
 		// Handles if the view should be rebound to a new context or an existing context
-		public virtual VM CoordinateRebind<V>(V view, VM toVM, IContainer withContainer)
+		public virtual void CoordinateRebind<V>(V view, VM toVM, IContainer withContainer)
 			where V : IView<VM>
 		{
 			_coordinatorLock.EnterWriteLock();
@@ -251,10 +251,11 @@ namespace SHARP.Core
 
 				if (_bi_contexts_viewModels.TryGetKey(toVM, out var toContext))
 				{
-					return RebindToContext(view, fromContext, toContext, withContainer);
+					RebindToContext(view, fromContext, toContext, withContainer);
+					return;
 				}
 
-				return ConvertToContextualViewModel(view, toVM, fromContext, withContainer);
+				ConvertToContextualViewModel(view, toVM, fromContext, withContainer);
 			}
 			finally
 			{
@@ -262,7 +263,7 @@ namespace SHARP.Core
 			}
 		}
 
-		public VM RebindToContext(IView<VM> view, string fromContext, string toContext, IContainer withContainer)
+		public void RebindToContext(IView<VM> view, string fromContext, string toContext, IContainer withContainer)
 		{
 			_coordinatorLock.EnterWriteLock();
 
@@ -274,17 +275,19 @@ namespace SHARP.Core
 				if (string.IsNullOrEmpty(fromContext))
 				{
 					OrphanViewModel(currentViewModel);
-					return Get(view, toContext, withContainer);
+
+					view.ViewModel.Value = Get(view, toContext, withContainer);
+					return;
 				}
 
 				if (fromContext == toContext)
 				{
 					Debug.LogWarning($"Trying to rebind to the same context {toContext} for {view.GetType()}, returning current view model");
-					return view.ViewModel.CurrentValue;
+					return;
 				}
 
 				UnregisterView(view, fromContext);
-				return Get(view, toContext, withContainer);
+				view.ViewModel.Value = Get(view, toContext, withContainer);
 			}
 			finally
 			{
@@ -361,7 +364,7 @@ namespace SHARP.Core
 			return contextViewModel;
 		}
 
-		VM ConvertToContextualViewModel(IView<VM> view, VM toVM, string fromContext, IContainer withContainer)
+		void ConvertToContextualViewModel(IView<VM> view, VM toVM, string fromContext, IContainer withContainer)
 		{
 			if (!_bi_views_viewModels_WithoutContext.TryGetKey(toVM, out var targetView))
 			{
@@ -373,7 +376,8 @@ namespace SHARP.Core
 			RemoveFromWithoutContextTracking(toVM, targetView);
 			AddToContextTracking(toVM, targetView, newContext);
 
-			return RebindToContext(view, fromContext, newContext, withContainer);
+			RebindToContext(view, fromContext, newContext, withContainer);
+			return;
 		}
 
 		#endregion

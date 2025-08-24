@@ -35,6 +35,13 @@ namespace SHARP.Core
 		IDiscoveryQuery<VM> WithoutContext();
 
 		/// <summary>
+		/// Filter to ViewModels that exist in any context (excludes contextless ViewModels).
+		/// This is equivalent to <see cref="InAnyContext"/> and <see cref="WithoutContext"/> together.
+		/// </summary>
+		/// <returns></returns>
+		IDiscoveryQuery<VM> WithOrWithoutContext();
+
+		/// <summary>
 		/// Filter to ViewModels that are currently active in the coordinator.
 		/// </summary>
 		IDiscoveryQuery<VM> ThatAreActive();
@@ -44,6 +51,12 @@ namespace SHARP.Core
 		/// </summary>
 		IDiscoveryQuery<VM> ThatAreOrphaned();
 
+		/// <summary>
+		/// Filter to ViewModels that exist in the coordinator.
+		/// This is equivalent to <see cref="ThatAreActive"/> and <see cref="ThatAreOrphaned"/> together.
+		/// </summary>
+		/// <returns></returns>
+		IDiscoveryQuery<VM> ThatAreActiveOrOrphaned();
 
 		// ===== STEP 2: SPATIAL FILTERING =====
 		// These operations require Unity hierarchy traversal and should execute after
