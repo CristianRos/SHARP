@@ -19,25 +19,25 @@
 
 ### Coordinator Service
 
-- **Coordinator/**  
+- **Coordinator**  
   The Coordinator service manages the lifecycle and relationships between ViewModels and Views.  
   - Tracks creation, destruction, and active states of MVVM components.
-  - Enables navigation, context switching, and ensures consistency across the UI.
+  - Enables context switching, and ensures consistency across the UI.
   - Acts as the central hub for MVVM orchestration in your Unity scene.
 
 ### Discovery Service
 
-- **Discovery/**  
+- **Discovery**  
   The Discovery service provides a fluent query builder API on top of the Coordinator and Unity's scene hierarchy.
   - Enables powerful search and retrieval of ViewModels, Views, and their relationships.
   - Facilitates dynamic UI composition, context-aware queries, and advanced MVVM scenarios.
 
 ### Helpers & Integrations
 
-- **Helpers/**  
+- **Helpers**  
   Utility functions and extensions to simplify common MVVM, reactivity, and Unity integration tasks.
 
-- **Integrations/**  
+- **Integrations**  
   Bridges between SHARP and external frameworks or Unity systems (e.g., Reflex DI integration).
 
 ---
@@ -74,7 +74,7 @@
    - Register your Views and ViewModels.
    - Query and compose UI dynamically at runtime.
 
-4. **Integrate Reflex DI (optional)**  
+4. **Integrate Reflex DI**  
    - Leverage Reflex for dependency injection in your MVVM components.
 
 ---
@@ -149,7 +149,7 @@ For a full suite of advanced and practical examples—including scenarios like c
 
 ---
 
-## Directory Structure
+## Core Directory Structure
 
 - `Coordinator/` — Coordinator service code
 - `Discovery/` — Discovery service code
@@ -172,4 +172,3 @@ For a full suite of advanced and practical examples—including scenarios like c
 
 MIT
 
----
