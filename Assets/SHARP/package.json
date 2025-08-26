@@ -1,0 +1,33 @@
+{
+	"name": "com.cristianros.sharp",
+	"displayName": "SHARP",
+	"author": {
+		"name": "Cristian Ros",
+		"email": "cristianros.dev@gmail.com",
+		"url": "https://github.com/cristianros"
+	},
+	"version": "1.0.0",
+	"unity": "6000.0",
+	"description": "SHARP is a reactive MVVM programming library for Unity, leveraging the power of Cysharp's R3 for high-performance reactivity, the Reflex DI framework for dependency injection, and the MVVM paradigm to build robust, reactive, and maintainable UI architectures.",
+	"keywords": [
+		"UI",
+		"MVVM",
+		"Reflex",
+		"R3",
+		"reactive",
+		"architecture",
+		"organization"
+	],
+	"license": "MIT",
+	"dependencies": {
+		"com.cysharp.r3": "1.3.0",
+		"com.gustavopsantos.reflex": "12.0.0"
+	},
+	"samples": [
+		{
+			"displayName": "SHARP Examples",
+			"description": "Complete MVVM examples showing counters, dynamic binding, and discovery patterns",
+			"path": "Samples~/Examples"
+		}
+	]
+}
